@@ -9,4 +9,5 @@ export const config = {
   port: Number.isFinite(port) ? port : 3000,
   supabaseUrl: process.env.SUPABASE_URL,
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  corsOrigin: process.env.CORS_ORIGIN ?? '*',
 };

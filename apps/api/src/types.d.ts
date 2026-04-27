@@ -1,5 +1,6 @@
 declare module '@sncft/import-engine' {
   export function parseScheduleCsv(csvText: string): Array<Record<string, string>>;
+  export function normalizeStationName(name: string): string;
   export function validateScheduleRows(rows: Array<Record<string, string>>): {
     validRows: Array<Record<string, unknown>>;
     issues: Array<{
