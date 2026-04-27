@@ -10,60 +10,77 @@ export interface CsvIssue {
   context?: Record<string, unknown>;
 }
 
-export interface LineCsvRow {
-  line_code: string;
+export interface SncftScheduleCsvRow {
+  line: string;
   line_name: string;
-  color?: string;
-  active?: string;
-}
-
-export interface StationCsvRow {
-  station_id: string;
-  station_name: string;
-  lat?: string;
-  lon?: string;
-  aliases?: string;
-}
-
-export interface ScheduleCsvRow {
-  trip_id: string;
-  line_code: string;
-  service_id: string;
-  train_number?: string;
-  headsign?: string;
-  direction_id?: string;
-  station_id: string;
-  stop_sequence: string;
-  arrival_time: string;
-  departure_time: string;
-}
-
-export interface FareCsvRow {
-  line_code?: string;
-  origin_station_id?: string;
-  destination_station_id?: string;
-  currency: string;
-  amount: string;
-  passenger_type?: string;
+  season: string;
+  valid_from: string;
+  valid_to: string;
+  direction: string;
+  train_number: string;
+  service_code: string;
+  station_order: string;
+  station: string;
+  arrival_time?: string;
+  departure_time?: string;
+  time?: string;
 }
 
 export interface NormalizedScheduleStop {
-  tripId: string;
+  tripKey: string;
   lineCode: string;
-  serviceId: string;
-  stationId: string;
-  stopSequence: number;
-  arrivalTimeRaw: string;
-  departureTimeRaw: string;
+  lineName: string;
+  season: string;
+  serviceCode: string;
+  direction: string;
+  trainNumber: string;
+  stationOrder: number;
+  stationName: string;
+  stationNameNormalized: string;
+  arrivalDisplayTime: string;
+  departureDisplayTime: string;
   arrivalMinutes: number;
   departureMinutes: number;
   dayOffset: number;
-  trainNumber?: string;
-  headsign?: string;
-  directionId?: 0 | 1;
+  validFrom: string;
+  validTo: string;
+}
+
+export interface NormalizedTripRecord {
+  externalTripId: string;
+  lineCode: string;
+  serviceCode: string;
+  trainNumber: string;
+  direction: string;
+  headsign: string;
+  validFrom: string;
+  validTo: string;
+}
+
+export interface NormalizedStopTimeRecord {
+  externalTripId: string;
+  stationName: string;
+  stationOrder: number;
+  arrivalDisplayTime: string;
+  departureDisplayTime: string;
+  arrivalMinutes: number;
+  departureMinutes: number;
+  dayOffset: number;
+}
+
+export interface NormalizedImportOutput {
+  trips: NormalizedTripRecord[];
+  stopTimes: NormalizedStopTimeRecord[];
+  calendars: Array<{
+    serviceCode: string;
+    validFrom: string;
+    validTo: string;
+    season: string;
+  }>;
 }
 
 export interface ScheduleValidationResult {
   validRows: NormalizedScheduleStop[];
   issues: CsvIssue[];
+  normalizedOutput?: NormalizedImportOutput;
 }

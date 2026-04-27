@@ -28,9 +28,22 @@ A,tunis ville,erriadh,1.700,TND
 A,tunis ville,hammam lif,1.500,TND
 D,tunis ville,mellassine,0.800,TND`;
 
-test('normalizeTime parses HH:MM into absolute minutes', () => {
-  assert.equal(normalizeTime('23:30'), 1410);
-  assert.equal(normalizeTime('00:11'), 11);
+function readFixture(name) {
+  return fs.readFileSync(path.join(__dirname, 'fixtures', name), 'utf8');
+}
+
+test('parse and validate normal Tunis Ville -> Erriadh trip', () => {
+  const rows = parseScheduleCsv(readFixture('sncft_normal_trip.csv'));
+  const result = validateScheduleRows(rows);
+
+  assert.equal(result.issues.length, 0);
+  assert.equal(result.validRows.length, 3);
+  assert.equal(result.validRows[0].stationName, 'Tunis Ville');
+  assert.equal(result.validRows[2].stationName, 'Erriadh');
+  assert.equal(result.validRows[0].arrivalMinutes, 430);
+  assert.ok(result.normalizedOutput);
+  assert.equal(result.normalizedOutput.trips.length, 1);
+  assert.equal(result.normalizedOutput.stopTimes.length, 3);
 });
 
 test('detectOvernightStops handles overnight 23:30 -> 00:11', () => {
@@ -39,6 +52,7 @@ test('detectOvernightStops handles overnight 23:30 -> 00:11', () => {
   assert.equal(normalized[0].arrivalMinutes, 1410);
   assert.equal(normalized[1].arrivalMinutes, 1451);
   assert.equal(normalized[1].dayOffset, 1);
+  assert.equal(normalized[1].arrivalDisplayTime, '00:11');
 });
 
 test('Ligne A direct Tunis Ville -> Erriadh and partial trip Tunis Ville -> Hammam Lif are valid', () => {
@@ -75,6 +89,7 @@ test('invalid row handling returns errors', () => {
   assert.equal(result.issues.length > 0, true);
 });
 
-test('normalizeStationName normalizes punctuation and casing', () => {
+test('normalizeTime and normalizeStationName remain stable', () => {
+  assert.equal(normalizeTime('23:30'), 1410);
   assert.equal(normalizeStationName('Tunis-Ville SNCFT'), 'tunis ville sncft');
 });
