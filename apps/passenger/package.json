@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "echo 'Passenger app scaffold pending in future phase'",
-    "build": "echo 'Passenger app build pending in future phase'",
-    "check": "echo 'Passenger app checks pending in future phase'"
+    "dev": "echo 'Use Flutter app in apps/passenger/flutter_app'",
+    "build": "echo 'Flutter build handled in flutter_app'",
+    "check": "echo 'Run flutter analyze in flutter_app'"
   }
 }
