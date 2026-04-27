@@ -1,0 +1,12 @@
+{
+  "name": "@sncft/import-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "build": "echo 'import-engine build placeholder'",
+    "check": "node --test",
+    "test": "node --test"
+  }
+}
