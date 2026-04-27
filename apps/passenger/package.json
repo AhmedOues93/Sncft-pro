@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node src/dev-server.js",
-    "build": "echo 'Passenger web scaffold only; Flutter app TODO'",
-    "check": "node -e \"console.log('Passenger scaffold check ok')\""
+    "dev": "echo 'Use Flutter app in apps/passenger/flutter_app'",
+    "build": "echo 'Flutter build handled in flutter_app'",
+    "check": "echo 'Run flutter analyze in flutter_app'"
   }
 }

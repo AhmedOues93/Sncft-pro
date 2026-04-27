@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node src/dev-server.js",
-    "build": "echo 'Static admin scaffold; no build step yet'",
-    "check": "node -e \"console.log('Admin scaffold check ok')\""
+    "dev": "python3 -m http.server 4173",
+    "build": "echo 'Static admin page'",
+    "check": "echo 'Admin static checks: none'"
   }
 }

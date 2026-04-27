@@ -1,25 +1,20 @@
-# SNCFT Admin Dashboard MVP (Phase 7)
+# SNCFT Admin Dashboard (MVP)
 
-This is a lightweight admin scaffold that talks to the backend API only.
+Static French admin dashboard (HTML/JS) used for CSV import workflow testing.
 
-## Workflow
-
-1. Paste/upload schedule CSV.
-2. Preview via `POST /admin/imports/schedules/preview`.
-3. Save draft via `POST /admin/imports/schedules`.
-4. Publish via `POST /admin/imports/:id/publish`.
-5. Rollback via `POST /admin/imports/:id/rollback`.
-
-## Run
+## Start
 
 ```bash
-npm run dev -w @sncft/admin
+cd apps/admin
+npm run dev
 ```
 
-Open `http://localhost:5174`.
+Open http://localhost:4173 and use backend API endpoints.
 
-## Security
+## Workflow supported
 
-- No Supabase service role key in frontend.
-- Frontend calls API only.
-- Configure API base URL in browser localStorage key `ADMIN_API_BASE_URL` if needed.
+- Coller CSV horaires → Prévisualiser
+- Enregistrer import horaires brouillon
+- Coller CSV tarifs → Prévisualiser
+- Enregistrer import tarifs brouillon
+- Publish/Rollback are exposed by API endpoints for integration with richer UI.

@@ -1,98 +1,36 @@
-# CSV Import Contract (Phase 3)
+# CSV Import Contract
 
-This document defines the expected SNCFT schedule CSV contract and normalization behavior.
+## Schedules CSV
 
-## Supported schedule CSV shape (`schedules.csv`)
+Accepted schedule headers (normalized):
 
-The importer accepts SNCFT-style rows with columns like:
-
-- `line`
+- `line` or `line_code`
 - `line_name`
 - `season`
 - `valid_from`
 - `valid_to`
 - `direction`
 - `train_number`
-- `service_code`
-- `station_order`
+- `service_code` (or `service_id`)
+- `station_order` (or `stop_sequence`)
 - `station`
 - `arrival_time`
 - `departure_time`
-- `time`
+- `time` (fallback used for arrival/departure)
 
-At least one time field must be available per row (`arrival_time`, `departure_time`, or `time`).
+## Fares CSV
 
-## Required fields
+Accepted fare headers:
 
-Required row fields:
+- `line` or `line_code`
+- `origin` or `origin_station_id`
+- `destination` or `destination_station_id`
+- `amount` or `fare`
+- `currency`
 
-- `line`
-- `line_name`
-- `season`
-- `valid_from`
-- `valid_to`
-- `direction`
-- `train_number`
-- `service_code`
-- `station_order`
-- `station`
+## Validation behavior
 
-Validation rules:
-
-- `valid_from` and `valid_to` must be `YYYY-MM-DD` and `valid_from <= valid_to`.
-- `station_order` must be a positive integer.
-- time must parse as `HH:mm`.
-- stops in the same trip must remain chronological after overnight normalization.
-
-## Normalization behavior
-
-### Station names
-
-- trimmed
-- accent/punctuation removed
-- multiple spaces collapsed
-- lowercased normalized key for station matching
-
-### Time normalization
-
-- display time is preserved as zero-padded `HH:mm` (`arrivalDisplayTime` / `departureDisplayTime`)
-- import time is converted to minutes since service-day start (`arrivalMinutes` / `departureMinutes`)
-
-### Overnight continuation
-
-If times roll over midnight in a trip, day offset increases.
-
-Example:
-
-- stop 1: `23:30` => `1410`
-- stop 2: `00:11` => `1451` (`+1` day offset)
-
-## Partial trips are valid
-
-The importer allows subset route segments, for example:
-
-- Tunis Ville -> Hammam Lif
-- Tunis Ville -> Jebel Jelloud
-
-A trip does not need to traverse an entire line to be accepted.
-
-## Normalized output (DB insertion shape)
-
-The validator returns normalized output grouped as:
-
-- `trips`
-- `stopTimes`
-- `calendars`
-
-This output is designed for writing into DB tables (`trips`, `stop_times`, `calendars`) in a later phase.
-
-## Phase 5 persistence notes
-
-Normalized schedule output is persisted as draft staging records before publish:
-- imports
-- import_issues
-- import_calendars
-- import_trips
-- import_stop_times
-
-Publish activates one import per `(line_code, season)` and stores `previous_active_import_id` to support rollback.
+- Required schedule fields: line, station, station_order.
+- Times must be `HH:mm` and support overnight rollover.
+- Chronological stop order is normalized with day offsets.
+- Issues are returned as `error`, `warning`, `info`.

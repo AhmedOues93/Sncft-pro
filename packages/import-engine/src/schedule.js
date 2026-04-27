@@ -15,43 +15,15 @@ function parseCsvLine(line) {
   return line.split(',').map((value) => value.trim());
 }
 
-function normalizeHeader(header) {
-  return header.trim().toLowerCase();
-}
-
-function toDisplayTime(raw) {
-  const match = /^(\d{1,2}):(\d{2})$/.exec(String(raw).trim());
-  if (!match) {
-    return raw;
-  }
-  return `${match[1].padStart(2, '0')}:${match[2]}`;
-}
-
-function getStopBaseTime(row) {
-  return row.arrival_time || row.departure_time || row.time || '';
-}
-
-function parseDateStrict(value) {
-  const str = String(value || '').trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-    return null;
-  }
-  const date = new Date(`${str}T00:00:00Z`);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-export function parseScheduleCsv(csvText) {
+export function parseCsv(csvText) {
   const lines = csvText
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
 
-  if (lines.length === 0) {
-    return [];
-  }
+  if (lines.length === 0) return [];
 
-  const headers = parseCsvLine(lines[0]).map(normalizeHeader);
-
+  const headers = parseCsvLine(lines[0]).map((header) => header.toLowerCase());
   return lines.slice(1).map((line) => {
     const values = parseCsvLine(line);
     const row = {};
@@ -64,8 +36,16 @@ export function parseScheduleCsv(csvText) {
   });
 }
 
+export function parseScheduleCsv(csvText) {
+  return parseCsv(csvText);
+}
+
+export function parseFareCsv(csvText) {
+  return parseCsv(csvText);
+}
+
 export function normalizeStationName(name) {
-  return String(name || '')
+  return String(name)
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-zA-Z0-9\s]/g, ' ')
@@ -76,16 +56,11 @@ export function normalizeStationName(name) {
 
 export function normalizeTime(timeValue) {
   const match = /^(\d{1,2}):(\d{2})$/.exec(String(timeValue).trim());
-  if (!match) {
-    throw new Error(`Invalid time format: ${timeValue}`);
-  }
+  if (!match) throw new Error(`Invalid time format: ${timeValue}`);
 
   const hours = Number(match[1]);
   const minutes = Number(match[2]);
-
-  if (hours < 0 || hours > 47 || minutes < 0 || minutes > 59) {
-    throw new Error(`Invalid time value: ${timeValue}`);
-  }
+  if (hours < 0 || hours > 47 || minutes < 0 || minutes > 59) throw new Error(`Invalid time value: ${timeValue}`);
 
   return hours * 60 + minutes;
 }
@@ -94,57 +69,44 @@ export function detectOvernightStops(rows) {
   const byTripKey = new Map();
 
   for (const row of rows) {
-    const tripKey = `${row.line}|${row.train_number}|${row.service_code}|${row.direction}|${row.valid_from}|${row.valid_to}`;
-    if (!byTripKey.has(tripKey)) {
-      byTripKey.set(tripKey, []);
-    }
-    byTripKey.get(tripKey).push(row);
+    const tripId = row.trip_id ?? `${row.line}:${row.train_number}:${row.direction}:${row.service_code}`;
+    if (!byTrip.has(tripId)) byTrip.set(tripId, []);
+    byTrip.get(tripId).push(row);
   }
 
   const normalizedStops = [];
 
-  for (const [tripKey, tripRows] of byTripKey.entries()) {
-    tripRows.sort((a, b) => Number(a.station_order) - Number(b.station_order));
+  for (const [tripId, tripRows] of byTrip.entries()) {
+    tripRows.sort((a, b) => Number(a.stop_sequence ?? a.station_order) - Number(b.stop_sequence ?? b.station_order));
 
     let dayOffset = 0;
     let previousDepartureMinutes = null;
 
     for (const row of tripRows) {
-      const arrivalRaw = row.arrival_time || row.time || row.departure_time;
-      const departureRaw = row.departure_time || row.time || row.arrival_time;
+      const arr = row.arrival_time || row.time || row.departure_time;
+      const dep = row.departure_time || row.time || row.arrival_time;
+      const arrivalRaw = normalizeTime(arr);
+      const departureRaw = normalizeTime(dep);
 
-      const arrivalBase = normalizeTime(arrivalRaw);
-      const departureBase = normalizeTime(departureRaw);
+      if (previousDeparture >= 0 && arrivalRaw < previousDeparture % (24 * 60)) dayOffset += 1;
 
-      if (previousDepartureMinutes !== null && arrivalBase < previousDepartureMinutes % 1440) {
-        dayOffset += 1;
-      }
+      const arrivalMinutes = arrivalRaw + dayOffset * 24 * 60;
+      let departureMinutes = departureRaw + dayOffset * 24 * 60;
+      if (departureMinutes < arrivalMinutes) departureMinutes += 24 * 60;
 
-      const arrivalMinutes = arrivalBase + dayOffset * 1440;
-      let departureMinutes = departureBase + dayOffset * 1440;
-
-      if (departureMinutes < arrivalMinutes) {
-        departureMinutes += 1440;
-      }
-
-      normalizedStops.push({
-        tripKey,
-        lineCode: row.line,
-        lineName: row.line_name,
-        season: row.season,
-        serviceCode: row.service_code,
-        direction: row.direction,
-        trainNumber: row.train_number,
-        stationOrder: Number(row.station_order),
-        stationName: row.station,
-        stationNameNormalized: normalizeStationName(row.station),
-        arrivalDisplayTime: toDisplayTime(arrivalRaw),
-        departureDisplayTime: toDisplayTime(departureRaw),
+      normalized.push({
+        tripId,
+        lineCode: row.line_code ?? row.line,
+        serviceId: row.service_id ?? row.service_code,
+        stationId: row.station_id ?? normalizeStationName(row.station),
+        stationName: row.station ?? row.station_name,
+        stopSequence: Number(row.stop_sequence ?? row.station_order),
+        arrivalTimeRaw: arr,
+        departureTimeRaw: dep,
         arrivalMinutes,
         departureMinutes,
         dayOffset,
-        validFrom: row.valid_from,
-        validTo: row.valid_to,
+        trainNumber: row.train_number || undefined,
       });
 
       previousDepartureMinutes = departureMinutes;
@@ -218,87 +180,35 @@ export function validateScheduleRows(rows) {
 
   rows.forEach((row, index) => {
     const rowNumber = index + 2;
-    validateRequiredFields(row, rowNumber, issues);
-
-    const fromDate = parseDateStrict(row.valid_from);
-    const toDate = parseDateStrict(row.valid_to);
-    if (!fromDate || !toDate || fromDate > toDate) {
-      issues.push({
-        severity: 'error',
-        sourceFile: 'schedules.csv',
-        rowNumber,
-        fieldName: 'valid_from,valid_to',
-        code: 'INVALID_DATE_RANGE',
-        message: 'valid_from and valid_to must be valid YYYY-MM-DD with valid_from <= valid_to',
-      });
-    }
-
-    const stationOrder = Number(row.station_order);
-    if (!Number.isInteger(stationOrder) || stationOrder <= 0) {
-      issues.push({
-        severity: 'error',
-        sourceFile: 'schedules.csv',
-        rowNumber,
-        fieldName: 'station_order',
-        code: 'INVALID_STATION_ORDER',
-        message: 'station_order must be a positive integer',
-      });
-    }
-
-    try {
-      normalizeTime(getStopBaseTime(row));
-    } catch {
-      issues.push({
-        severity: 'error',
-        sourceFile: 'schedules.csv',
-        rowNumber,
-        fieldName: 'arrival_time/departure_time/time',
-        code: 'INVALID_TIME',
-        message: 'At least one valid HH:MM time is required',
-      });
-    }
-  });
-
-  const validRows = issues.some((issue) => issue.severity === 'error') ? [] : detectOvernightStops(rows);
-
-  if (validRows.length > 0) {
-    const rowsByTrip = new Map();
-
-    for (const row of validRows) {
-      if (!rowsByTrip.has(row.tripKey)) {
-        rowsByTrip.set(row.tripKey, []);
-      }
-      rowsByTrip.get(row.tripKey).push(row);
-    }
-
-    for (const [tripKey, tripRows] of rowsByTrip.entries()) {
-      tripRows.sort((a, b) => a.stationOrder - b.stationOrder);
-      for (let index = 1; index < tripRows.length; index += 1) {
-        const prev = tripRows[index - 1];
-        const curr = tripRows[index];
-
-        if (curr.stationOrder <= prev.stationOrder || curr.arrivalMinutes < prev.departureMinutes) {
-          issues.push({
-            severity: 'error',
-            sourceFile: 'schedules.csv',
-            code: 'NON_CHRONOLOGICAL_STOP_ORDER',
-            message: `Trip ${tripKey} has non-chronological stop order`,
-            context: {
-              previousStationOrder: prev.stationOrder,
-              currentStationOrder: curr.stationOrder,
-              previousDepartureMinutes: prev.departureMinutes,
-              currentArrivalMinutes: curr.arrivalMinutes,
-            },
-          });
-          break;
-        }
-      }
-    }
+    if (!(row.trip_id || row.train_number)) issues.push({ severity: 'error', sourceFile: 'schedules.csv', rowNumber, fieldName: 'trip_id', code: 'TRIP_REQUIRED', message: 'trip/train identifier required' });
+    if (!(row.station_id || row.station)) issues.push({ severity: 'error', sourceFile: 'schedules.csv', rowNumber, fieldName: 'station', code: 'STATION_REQUIRED', message: 'station required' });
   }
 
-  return {
-    validRows: issues.some((issue) => issue.severity === 'error') ? [] : validRows,
-    issues,
-    normalizedOutput: issues.some((issue) => issue.severity === 'error') ? undefined : buildNormalizedImportOutput(validRows),
-  };
+  let validRows = [];
+  if (!issues.some((issue) => issue.severity === 'error')) {
+    validRows = detectOvernightStops(rows);
+  }
+
+  return { validRows, issues };
+}
+
+export function parseAndValidateFares(rows) {
+  const issues = [];
+  const fares = rows.map((row, index) => {
+    const rowNumber = index + 2;
+    const amount = Number(row.amount || row.fare || 0);
+    if (!Number.isFinite(amount) || amount < 0) {
+      issues.push({ severity: 'error', sourceFile: 'fares.csv', rowNumber, fieldName: 'amount', code: 'FARE_INVALID', message: 'Fare amount must be >= 0' });
+    }
+
+    return {
+      lineCode: row.line || row.line_code || 'ALL',
+      origin: normalizeStationName(row.origin || row.origin_station || row.origin_station_id || ''),
+      destination: normalizeStationName(row.destination || row.destination_station || row.destination_station_id || ''),
+      amount,
+      currency: row.currency || 'TND',
+    };
+  });
+
+  return { fares, issues };
 }

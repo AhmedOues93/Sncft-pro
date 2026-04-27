@@ -1,26 +1,29 @@
 import { Router } from 'express';
 
-import { getSupabaseServerClient } from '../lib/supabase.js';
-import { ActiveScheduleRepository } from '../repositories/activeScheduleRepository.js';
-import { StationSearchService } from '../services/journey/stationSearchService.js';
+import { memoryStore } from '../store/memory-store.js';
+import { normalizeStationName } from '../services/imports.js';
 
 export const stationsRouter = Router();
 
-stationsRouter.get('/stations/search', async (req: any, res: any) => {
-  const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
-  if (!q) {
-    return res.status(400).json({ error: 'Query parameter q is required' });
+stationsRouter.get('/stations/search', (req, res) => {
+  const query = String(req.query.q ?? '').trim();
+  if (!query) {
+    res.json({ items: [] });
+    return;
   }
 
-  try {
-    const repository = new ActiveScheduleRepository(getSupabaseServerClient());
-    const service = new StationSearchService(repository);
-    const stations = await service.searchStations(q);
+  const normalizedQuery = normalizeStationName(query);
+  const stationMap = new Map<string, string>();
 
-    return res.status(200).json({ query: q, count: stations.length, stations });
-  } catch (error) {
-    return res.status(500).json({
-      error: error instanceof Error ? error.message : 'Failed to search stations',
-    });
-  }
+  memoryStore.getPublishedStops().forEach((stop) => {
+    const normalized = normalizeStationName(stop.station);
+    if (!stationMap.has(normalized)) stationMap.set(normalized, stop.station);
+  });
+
+  const items = Array.from(stationMap.entries())
+    .filter(([normalized]) => normalized.includes(normalizedQuery))
+    .slice(0, 10)
+    .map(([id, name]) => ({ id, name }));
+
+  res.json({ items });
 });
