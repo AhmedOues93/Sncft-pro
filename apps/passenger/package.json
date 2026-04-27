@@ -1,0 +1,10 @@
+{
+  "name": "@sncft/passenger",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'Passenger app scaffold pending in future phase'",
+    "build": "echo 'Passenger app build pending in future phase'",
+    "check": "echo 'Passenger app checks pending in future phase'"
+  }
+}

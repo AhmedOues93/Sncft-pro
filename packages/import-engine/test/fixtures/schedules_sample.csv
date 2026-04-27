@@ -1,0 +1,5 @@
+trip_id,line_code,service_id,train_number,headsign,direction_id,station_id,stop_sequence,arrival_time,departure_time
+A-100,A,WKD,100,Borj Cedria,0,TVL,1,23:30,23:32
+A-100,A,WKD,100,Borj Cedria,0,HLI,2,00:11,00:12
+A-200,A,WKD,200,Hammam Lif,0,TVL,1,07:10,07:11
+A-200,A,WKD,200,Hammam Lif,0,HLI,2,07:35,07:36
