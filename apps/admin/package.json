@@ -1,0 +1,10 @@
+{
+  "name": "@sncft/admin",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'Admin dashboard scaffold pending in future phase'",
+    "build": "echo 'Admin dashboard build pending in future phase'",
+    "check": "echo 'Admin dashboard checks pending in future phase'"
+  }
+}

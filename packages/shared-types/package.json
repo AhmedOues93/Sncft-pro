@@ -1,0 +1,10 @@
+{
+  "name": "@sncft/shared-types",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "echo 'shared-types build placeholder'",
+    "check": "echo 'shared-types check placeholder'"
+  }
+}
