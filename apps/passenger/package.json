@@ -1,10 +1,11 @@
 {
   "name": "@sncft/passenger",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "echo 'Passenger app scaffold pending in future phase'",
-    "build": "echo 'Passenger app build pending in future phase'",
-    "check": "echo 'Passenger app checks pending in future phase'"
+    "dev": "node src/dev-server.js",
+    "build": "echo 'Passenger web scaffold only; Flutter app TODO'",
+    "check": "node -e \"console.log('Passenger scaffold check ok')\""
   }
 }

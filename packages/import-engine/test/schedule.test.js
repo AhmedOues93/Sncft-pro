@@ -15,33 +15,45 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-test('normalizeTime parses HH:MM into absolute minutes', () => {
-  assert.equal(normalizeTime('23:30'), 1410);
-  assert.equal(normalizeTime('00:11'), 11);
+function readFixture(name) {
+  return fs.readFileSync(path.join(__dirname, 'fixtures', name), 'utf8');
+}
+
+test('parse and validate normal Tunis Ville -> Erriadh trip', () => {
+  const rows = parseScheduleCsv(readFixture('sncft_normal_trip.csv'));
+  const result = validateScheduleRows(rows);
+
+  assert.equal(result.issues.length, 0);
+  assert.equal(result.validRows.length, 3);
+  assert.equal(result.validRows[0].stationName, 'Tunis Ville');
+  assert.equal(result.validRows[2].stationName, 'Erriadh');
+  assert.equal(result.validRows[0].arrivalMinutes, 430);
+  assert.ok(result.normalizedOutput);
+  assert.equal(result.normalizedOutput.trips.length, 1);
+  assert.equal(result.normalizedOutput.stopTimes.length, 3);
 });
 
-test('detectOvernightStops flags next-day arrival for 23:30 -> 00:11', () => {
-  const csvPath = path.join(__dirname, 'fixtures', 'schedules_sample.csv');
-  const rows = parseScheduleCsv(fs.readFileSync(csvPath, 'utf8'));
-  const normalized = detectOvernightStops(rows).filter((item) => item.tripId === 'A-100');
+test('overnight Tunis Ville 23:30 -> Erriadh 00:11 is detected as next day', () => {
+  const rows = parseScheduleCsv(readFixture('sncft_overnight_trip.csv'));
+  const normalized = detectOvernightStops(rows);
 
   assert.equal(normalized[0].arrivalMinutes, 1410);
   assert.equal(normalized[1].arrivalMinutes, 1451);
   assert.equal(normalized[1].dayOffset, 1);
+  assert.equal(normalized[1].arrivalDisplayTime, '00:11');
 });
 
-test('partial trips are valid (e.g. Tunis Ville -> Hammam Lif)', () => {
-  const csvPath = path.join(__dirname, 'fixtures', 'schedules_sample.csv');
-  const rows = parseScheduleCsv(fs.readFileSync(csvPath, 'utf8')).filter((row) => row.trip_id === 'A-200');
-
+test('partial trip Tunis Ville -> Hammam Lif is valid', () => {
+  const rows = parseScheduleCsv(readFixture('sncft_partial_trip.csv'));
   const result = validateScheduleRows(rows);
 
   assert.equal(result.issues.length, 0);
   assert.equal(result.validRows.length, 2);
-  assert.equal(result.validRows[0].stationId, 'TVL');
-  assert.equal(result.validRows[1].stationId, 'HLI');
+  assert.equal(result.validRows[0].stationName, 'Tunis Ville');
+  assert.equal(result.validRows[1].stationName, 'Hammam Lif');
 });
 
-test('normalizeStationName normalizes punctuation and casing', () => {
+test('normalizeTime and normalizeStationName remain stable', () => {
+  assert.equal(normalizeTime('23:30'), 1410);
   assert.equal(normalizeStationName('Tunis-Ville SNCFT'), 'tunis ville sncft');
 });

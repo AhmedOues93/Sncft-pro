@@ -1,65 +1,98 @@
-# CSV Import Contract (Phase 2)
+# CSV Import Contract (Phase 3)
 
-This document defines the **expected CSV formats** for SNCFT Navigator imports.
-These are import-engine contracts (raw input) and are not a direct DB dump format.
+This document defines the expected SNCFT schedule CSV contract and normalization behavior.
 
-## 1) `lines.csv`
+## Supported schedule CSV shape (`schedules.csv`)
 
-| Column | Type | Required | Example | Notes |
-|---|---|---:|---|---|
-| `line_code` | string | yes | `A` | Unique per import (e.g. A, D, E). |
-| `line_name` | string | yes | `Ligne A` | Display name. |
-| `color` | string | no | `#0074D9` | Optional hex color. |
-| `active` | boolean-ish | no | `true` | Defaults to true. |
+The importer accepts SNCFT-style rows with columns like:
 
-## 2) `stations.csv`
+- `line`
+- `line_name`
+- `season`
+- `valid_from`
+- `valid_to`
+- `direction`
+- `train_number`
+- `service_code`
+- `station_order`
+- `station`
+- `arrival_time`
+- `departure_time`
+- `time`
 
-| Column | Type | Required | Example | Notes |
-|---|---|---:|---|---|
-| `station_id` | string | yes | `TVL` | External source station identifier (stable within import). |
-| `station_name` | string | yes | `Tunis Ville` | Canonical station display name. |
-| `lat` | number | no | `36.8008` | Optional latitude. |
-| `lon` | number | no | `10.1801` | Optional longitude. |
-| `aliases` | string | no | `Tunis-Ville;Tunis Ville SNCFT` | Semicolon-separated aliases. |
+At least one time field must be available per row (`arrival_time`, `departure_time`, or `time`).
 
-## 3) `schedules.csv` (trip + stop_times rows)
+## Required fields
 
-Each row represents one stop call in one trip.
+Required row fields:
 
-| Column | Type | Required | Example | Notes |
-|---|---|---:|---|---|
-| `trip_id` | string | yes | `A-2026-001` | External trip identifier. |
-| `line_code` | string | yes | `A` | Must exist in `lines.csv`. |
-| `service_id` | string | yes | `WKD` | Service/calendar key. |
-| `train_number` | string | no | `104` | Train label shown in details. |
-| `headsign` | string | no | `Borj Cédria` | Optional destination text. |
-| `direction_id` | 0/1 | no | `0` | Optional direction flag. |
-| `station_id` | string | yes | `TVL` | Must exist in `stations.csv`. |
-| `stop_sequence` | integer | yes | `1` | Must be strictly increasing per trip. |
-| `arrival_time` | `HH:MM` | yes | `23:30` | Local timetable time. |
-| `departure_time` | `HH:MM` | yes | `23:32` | Local timetable time. |
+- `line`
+- `line_name`
+- `season`
+- `valid_from`
+- `valid_to`
+- `direction`
+- `train_number`
+- `service_code`
+- `station_order`
+- `station`
 
-### Overnight handling
+Validation rules:
 
-If a later stop has a clock value smaller than a previous stop (e.g. `23:30` then `00:11`),
-import normalization must increment day offset and compute absolute minutes accordingly.
+- `valid_from` and `valid_to` must be `YYYY-MM-DD` and `valid_from <= valid_to`.
+- `station_order` must be a positive integer.
+- time must parse as `HH:mm`.
+- stops in the same trip must remain chronological after overnight normalization.
 
-## 4) `fares.csv`
+## Normalization behavior
 
-| Column | Type | Required | Example | Notes |
-|---|---|---:|---|---|
-| `line_code` | string | no | `A` | Optional fare scoping by line. |
-| `origin_station_id` | string | no | `TVL` | Optional origin station scope. |
-| `destination_station_id` | string | no | `HLI` | Optional destination station scope. |
-| `currency` | string | yes | `TND` | ISO-like currency code. |
-| `amount` | decimal | yes | `1.500` | Non-negative fare amount. |
-| `passenger_type` | string | no | `adult` | Defaults to `adult`. |
+### Station names
 
-## Validation outcomes
+- trimmed
+- accent/punctuation removed
+- multiple spaces collapsed
+- lowercased normalized key for station matching
 
-Validation should output:
+### Time normalization
 
-- row counts by source file,
-- normalized row previews,
-- errors and warnings (`import_issues`-compatible records),
-- publish-blocking status (true if errors exist).
+- display time is preserved as zero-padded `HH:mm` (`arrivalDisplayTime` / `departureDisplayTime`)
+- import time is converted to minutes since service-day start (`arrivalMinutes` / `departureMinutes`)
+
+### Overnight continuation
+
+If times roll over midnight in a trip, day offset increases.
+
+Example:
+
+- stop 1: `23:30` => `1410`
+- stop 2: `00:11` => `1451` (`+1` day offset)
+
+## Partial trips are valid
+
+The importer allows subset route segments, for example:
+
+- Tunis Ville -> Hammam Lif
+- Tunis Ville -> Jebel Jelloud
+
+A trip does not need to traverse an entire line to be accepted.
+
+## Normalized output (DB insertion shape)
+
+The validator returns normalized output grouped as:
+
+- `trips`
+- `stopTimes`
+- `calendars`
+
+This output is designed for writing into DB tables (`trips`, `stop_times`, `calendars`) in a later phase.
+
+## Phase 5 persistence notes
+
+Normalized schedule output is persisted as draft staging records before publish:
+- imports
+- import_issues
+- import_calendars
+- import_trips
+- import_stop_times
+
+Publish activates one import per `(line_code, season)` and stores `previous_active_import_id` to support rollback.
