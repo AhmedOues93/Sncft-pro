@@ -33,6 +33,7 @@ export interface ParsedFare {
   destination: string;
   amount: number;
   currency: string;
+  fareType?: string;
 }
 
 export interface TripStop {

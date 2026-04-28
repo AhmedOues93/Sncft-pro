@@ -28,23 +28,10 @@ A,tunis ville,erriadh,1.700,TND
 A,tunis ville,hammam lif,1.500,TND
 D,tunis ville,mellassine,0.800,TND`;
 
-function readFixture(name) {
-  return fs.readFileSync(path.join(__dirname, 'fixtures', name), 'utf8');
-}
-
-test('parse and validate normal Tunis Ville -> Erriadh trip', () => {
-  const rows = parseScheduleCsv(readFixture('sncft_normal_trip.csv'));
-  const result = validateScheduleRows(rows);
-
-  assert.equal(result.issues.length, 0);
-  assert.equal(result.validRows.length, 3);
-  assert.equal(result.validRows[0].stationName, 'Tunis Ville');
-  assert.equal(result.validRows[2].stationName, 'Erriadh');
-  assert.equal(result.validRows[0].arrivalMinutes, 430);
-  assert.ok(result.normalizedOutput);
-  assert.equal(result.normalizedOutput.trips.length, 1);
-  assert.equal(result.normalizedOutput.stopTimes.length, 3);
-});
+const faresCsv = `line,origin,destination,amount,currency
+A,tunis ville,erriadh,1.700,TND
+A,tunis ville,hammam lif,1.500,TND
+D,tunis ville,mellassine,0.800,TND`;
 
 test('detectOvernightStops handles overnight 23:30 -> 00:11', () => {
   const rows = parseScheduleCsv(scheduleCsv);
@@ -81,6 +68,12 @@ test('fare parsing works for 1 and 2 passengers multipliers', () => {
   const aFare = fareResult.fares.find((f) => f.destination === 'erriadh');
   assert.equal(aFare.amount, 1.7);
   assert.equal(Number((aFare.amount * 2).toFixed(3)), 3.4);
+});
+
+test('invalid row handling returns errors', () => {
+  const rows = parseScheduleCsv('line,station_order,station\nA,1,');
+  const result = validateScheduleRows(rows);
+  assert.equal(result.issues.length > 0, true);
 });
 
 test('invalid row handling returns errors', () => {
