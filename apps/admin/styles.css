@@ -1,0 +1,7 @@
+body { font-family: Arial, sans-serif; background: #f4f6fa; margin: 0; }
+.container { max-width: 980px; margin: 1rem auto; padding: 0 1rem 2rem; }
+.card { background: #fff; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+.row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.6rem 0; }
+input, textarea, button { padding: 0.5rem; }
+textarea { width: 100%; font-family: monospace; }
+pre { background: #0f172a; color: #d1e7ff; padding: 0.7rem; border-radius: 6px; overflow: auto; }
