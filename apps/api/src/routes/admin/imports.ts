@@ -1,76 +1,85 @@
 import { Router } from 'express';
 
+import { asyncHandler } from '../../async-handler.js';
 import { ApiError } from '../../errors.js';
-import { previewFaresCsv, previewSchedulesCsv, ensureBodyText } from '../../services/imports.js';
-import { memoryStore } from '../../store/memory-store.js';
+import { requireAdminRole } from '../../middleware/admin-auth.js';
+import { rateLimit } from '../../middleware/security.js';
+import { ensureBodyText, previewFaresCsv, previewSchedulesCsv } from '../../services/imports.js';
+import { getImportStore } from '../../store/index.js';
 
 export const adminImportsRouter = Router();
 
-adminImportsRouter.post('/admin/imports/schedules/preview', (req, res) => {
+adminImportsRouter.post('/admin/imports/schedules/preview', rateLimit('admin-write', 40), requireAdminRole('editor'), asyncHandler(async (req, res) => {
   const csv = ensureBodyText(req.body?.csv, 'csv');
   const preview = previewSchedulesCsv(csv);
   res.json(preview);
-});
+}));
 
-adminImportsRouter.post('/admin/imports/schedules', (req, res) => {
+adminImportsRouter.post('/admin/imports/schedules', rateLimit('admin-write', 40), requireAdminRole('editor'), asyncHandler(async (req, res) => {
   const csv = ensureBodyText(req.body?.csv, 'csv');
+  const filename = typeof req.body?.filename === 'string' ? req.body.filename : 'schedules.csv';
   const preview = previewSchedulesCsv(csv);
-  const draft = memoryStore.createDraft('schedule', preview.stops, preview.summary, preview.issues);
-  res.status(201).json({ id: draft.id, status: draft.status, summary: preview.summary, issues: preview.issues });
-});
+  const store = getImportStore();
+  const draft = await store.createDraft('schedule', preview.stops, preview.summary, preview.issues, filename);
+  res.status(201).json({ id: draft.id, status: draft.status, summary: draft.summary, issues: draft.issues });
+}));
 
-adminImportsRouter.get('/admin/imports/:id/preview', (req, res) => {
-  const draft = memoryStore.getDraft(req.params.id);
+adminImportsRouter.post('/admin/imports/fares/preview', rateLimit('admin-write', 40), requireAdminRole('editor'), asyncHandler(async (req, res) => {
+  const csv = ensureBodyText(req.body?.csv, 'csv');
+  const preview = previewFaresCsv(csv);
+  res.json(preview);
+}));
+
+adminImportsRouter.post('/admin/imports/fares', rateLimit('admin-write', 40), requireAdminRole('editor'), asyncHandler(async (req, res) => {
+  const csv = ensureBodyText(req.body?.csv, 'csv');
+  const filename = typeof req.body?.filename === 'string' ? req.body.filename : 'fares.csv';
+  const preview = previewFaresCsv(csv);
+  const store = getImportStore();
+  const draft = await store.createDraft('fare', preview.fares, preview.summary, preview.issues, filename);
+  res.status(201).json({ id: draft.id, status: draft.status, summary: draft.summary, issues: draft.issues });
+}));
+
+adminImportsRouter.get('/admin/imports/:id/preview', requireAdminRole('viewer'), asyncHandler(async (req, res) => {
+  const store = getImportStore();
+  const draft = await store.getDraft(req.params.id);
   if (!draft) throw new ApiError(404, 'Import not found');
+  res.json(draft);
+}));
 
-  res.json({
-    id: draft.id,
-    kind: draft.kind,
-    status: draft.status,
-    summary: draft.summary,
-    issues: draft.issues,
-    preview: Array.isArray(draft.payload) ? draft.payload.slice(0, 5) : [],
-  });
-});
+adminImportsRouter.post('/admin/imports/:id/publish', rateLimit('admin-write', 40), requireAdminRole('publisher'), asyncHandler(async (req, res) => {
+  const store = getImportStore();
+  const published = await store.publishDraft(req.params.id);
+  res.json({ id: published.id, kind: published.kind, status: published.status });
+}));
 
-adminImportsRouter.post('/admin/imports/:id/publish', (req, res) => {
-  const published = memoryStore.publishDraft(req.params.id);
-  res.json({ id: published.id, status: published.status, publishedAt: new Date().toISOString() });
-});
+adminImportsRouter.post('/admin/imports/:id/rollback', rateLimit('admin-write', 40), requireAdminRole('publisher'), asyncHandler(async (req, res) => {
+  const store = getImportStore();
+  const rollback = await store.rollback(req.params.id);
+  res.json({ id: rollback.id, kind: rollback.kind, status: rollback.status });
+}));
 
-adminImportsRouter.post('/admin/imports/:id/rollback', (req, res) => {
-  const rolledBack = memoryStore.rollback(req.params.id);
-  res.json({ id: rolledBack.id, status: rolledBack.status, rolledBackAt: new Date().toISOString() });
-});
+adminImportsRouter.get('/admin/imports', requireAdminRole('viewer'), asyncHandler(async (req, res) => {
+  const kind = req.query.kind === 'schedule' || req.query.kind === 'fare' ? req.query.kind : undefined;
+  const store = getImportStore();
+  const items = await store.listDrafts(kind);
+  res.json({ count: items.length, items });
+}));
 
-adminImportsRouter.post('/admin/imports/fares/preview', (req, res) => {
-  const csv = ensureBodyText(req.body?.csv, 'csv');
-  const preview = previewFaresCsv(csv);
-  res.json(preview);
-});
+adminImportsRouter.get('/admin/active-versions', requireAdminRole('viewer'), asyncHandler(async (_req, res) => {
+  const store = getImportStore();
+  const active = await store.getActiveVersions();
+  res.json(active);
+}));
 
-adminImportsRouter.post('/admin/imports/fares', (req, res) => {
-  const csv = ensureBodyText(req.body?.csv, 'csv');
-  const preview = previewFaresCsv(csv);
-  const draft = memoryStore.createDraft('fare', preview.fares, preview.summary, preview.issues);
-  res.status(201).json({ id: draft.id, status: draft.status, summary: preview.summary, issues: preview.issues });
-});
+adminImportsRouter.get('/admin/imports/active', requireAdminRole('viewer'), asyncHandler(async (_req, res) => {
+  const store = getImportStore();
+  const active = await store.getActiveVersions();
+  res.json(active);
+}));
 
-adminImportsRouter.get('/admin/imports/fares/:id/preview', (req, res) => {
-  const draft = memoryStore.getDraft(req.params.id);
-  if (!draft || draft.kind !== 'fare') throw new ApiError(404, 'Fare import not found');
-
-  res.json({
-    id: draft.id,
-    kind: draft.kind,
-    status: draft.status,
-    summary: draft.summary,
-    issues: draft.issues,
-    preview: Array.isArray(draft.payload) ? draft.payload.slice(0, 5) : [],
-  });
-});
-
-adminImportsRouter.post('/admin/imports/fares/:id/publish', (req, res) => {
-  const published = memoryStore.publishDraft(req.params.id);
-  res.json({ id: published.id, status: published.status, publishedAt: new Date().toISOString() });
-});
+adminImportsRouter.post('/admin/imports/fares/:id/rollback', rateLimit('admin-write', 40), requireAdminRole('publisher'), asyncHandler(async (req, res) => {
+  const store = getImportStore();
+  const rollback = await store.rollback(req.params.id);
+  if (rollback.kind !== 'fare') throw new ApiError(400, 'Rollback target is not a fare import');
+  res.json({ id: rollback.id, kind: rollback.kind, status: rollback.status });
+}));

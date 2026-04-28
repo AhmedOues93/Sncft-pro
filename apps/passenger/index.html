@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SNCFT Passenger</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="container">
+    <header class="hero card">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <img class="brand-logo" src="./assets/sncft-logo.png" alt="SNCFT" onerror="this.style.display='none'" />
+        <p class="eyebrow">SNCFT Navigator</p>
+        <h1>Recherche ferroviaire professionnelle</h1>
+        <p class="muted">Résultats chronologiques, correspondances claires et détails complets du trajet.</p>
+      </div>
+      <div class="hero-panel">
+        <label class="label" for="apiBaseUrl">API Base URL</label>
+        <div class="input-inline">
+          <input id="apiBaseUrl" aria-label="API base URL" />
+          <button id="saveApiConfig">Enregistrer</button>
+        </div>
+      </div>
+    </header>
+
+    <section class="card auth-card">
+      <div class="section-title">
+        <h2>Compte voyageur</h2>
+        <span class="chip">Connexion facultative</span>
+      </div>
+      <div class="row row-grid-4">
+        <input id="registerName" placeholder="Nom affiché" />
+        <input id="registerEmail" placeholder="Email" />
+        <input id="registerPassword" type="password" placeholder="Mot de passe" />
+        <button id="registerBtn">Créer compte</button>
+      </div>
+      <div class="row row-grid-4">
+        <input id="loginEmail" placeholder="Email" />
+        <input id="loginPassword" type="password" placeholder="Mot de passe" />
+        <button id="loginBtn">Se connecter</button>
+        <button id="logoutBtn" class="secondary">Se déconnecter</button>
+      </div>
+      <p id="authState" class="state">Non connecté</p>
+    </section>
+
+    <section class="card search-card">
+      <div class="section-title">
+        <h2>Planifier un trajet</h2>
+        <span class="chip chip-soft">5 résultats / page</span>
+      </div>
+      <div class="row row-grid-2">
+        <div class="field">
+          <label class="label">Départ</label>
+          <input id="originInput" autocomplete="off" placeholder="Tunis Ville" />
+          <ul id="originSuggestions" class="suggestions"></ul>
+        </div>
+        <div class="field">
+          <label class="label">Destination</label>
+          <input id="destinationInput" autocomplete="off" placeholder="Hammam Lif" />
+          <ul id="destinationSuggestions" class="suggestions"></ul>
+        </div>
+      </div>
+      <div class="row row-grid-3">
+        <label class="field-inline">Date <input id="dateInput" type="date" /></label>
+        <label class="field-inline">Heure <input id="timeInput" type="time" value="05:00" /></label>
+        <label class="field-inline">Personnes <input id="passengersInput" type="number" min="1" value="1" /></label>
+      </div>
+      <div class="row">
+        <button id="searchBtn">Rechercher</button>
+        <button id="saveFavoriteBtn" class="secondary">Sauvegarder itinéraire</button>
+      </div>
+      <p id="searchState" class="state"></p>
+    </section>
+
+    <section class="card">
+      <div class="section-header">
+        <h2>Résultats</h2>
+        <div class="row">
+          <button id="prevBtn" class="secondary">Précédent</button>
+          <button id="nextBtn" class="secondary">Suivant</button>
+        </div>
+      </div>
+      <div id="results"></div>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <h2>Détails du trajet</h2>
+        <span class="chip">Timeline</span>
+      </div>
+      <div id="details" class="details-panel">Sélectionnez un trajet.</div>
+    </section>
+  </main>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

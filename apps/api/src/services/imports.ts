@@ -62,7 +62,7 @@ export function previewSchedulesCsv(csvText: string): SchedulePreview {
 
   rows.forEach((row, index) => {
     const rowNumber = index + 2;
-    const lineCode = row.line ?? row.line_code;
+    const lineCode = row.line || row.line_code;
     const station = row.station;
     const stationOrder = Number(row.station_order);
 
@@ -147,6 +147,10 @@ export function previewFaresCsv(csvText: string): FarePreview {
       destination: normalizeStationName(row.destination || row.destination_station || row.destination_station_id || ''),
       amount,
       currency: row.currency || 'TND',
+      fareType: row.fare_type || row.ticket_type || row.fare_class || 'normal',
+      sections: Number(row.sections || row.section_count || 0) || undefined,
+      validFrom: row.valid_from || undefined,
+      validTo: row.valid_to || undefined,
     };
   });
 

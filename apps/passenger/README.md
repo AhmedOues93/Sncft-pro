@@ -1,7 +1,15 @@
-# Passenger App
+# Passenger app (functional integration)
 
-Main passenger client is Flutter:
+Run:
 
-- `apps/passenger/flutter_app`
+```bash
+npm run dev:passenger
+```
 
-Web package is kept as lightweight placeholder for workspace consistency.
+Default URL: `http://127.0.0.1:5175`
+
+Features:
+- station suggestions from API
+- journey search with datetime/passengers/pagination
+- direct + transfer result cards
+- details view with stop timeline and deduped transfer stop

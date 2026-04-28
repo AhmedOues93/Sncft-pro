@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "python3 -m http.server 4173",
-    "build": "echo 'Static admin page'",
-    "check": "echo 'Admin static checks: none'"
+    "dev": "node server.mjs",
+    "build": "echo 'Static admin app - no build step'",
+    "check": "node --check app.js"
   }
 }

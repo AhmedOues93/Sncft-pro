@@ -11,11 +11,12 @@
     "install:all": "npm install --workspaces",
     "dev": "npm run dev:api",
     "dev:api": "npm run dev -w @sncft/api",
-    "dev:admin": "npm run dev -w @sncft/admin",
-    "dev:passenger": "npm run dev -w @sncft/passenger",
+    "dev:admin": "npm run dev -w @sncft/admin --if-present",
+    "dev:passenger": "npm run dev -w @sncft/passenger --if-present",
     "build": "npm run build --workspaces --if-present",
     "check": "npm run check --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present"
+    "test": "npm run test --workspaces --if-present",
+    "import:all": "npm run import:all -w @sncft/api"
   },
   "engines": {
     "node": ">=20.0.0"

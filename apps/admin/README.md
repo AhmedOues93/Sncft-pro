@@ -1,20 +1,16 @@
-# SNCFT Admin Dashboard (MVP)
+# Admin app (functional integration)
 
-Static French admin dashboard (HTML/JS) used for CSV import workflow testing.
-
-## Start
+Run:
 
 ```bash
-cd apps/admin
-npm run dev
+npm run dev:admin
 ```
 
-Open http://localhost:4173 and use backend API endpoints.
+Default URL: `http://127.0.0.1:4170`
 
-## Workflow supported
-
-- Coller CSV horaires → Prévisualiser
-- Enregistrer import horaires brouillon
-- Coller CSV tarifs → Prévisualiser
-- Enregistrer import tarifs brouillon
-- Publish/Rollback are exposed by API endpoints for integration with richer UI.
+Features:
+- API base URL config
+- schedule preview/save/publish/rollback
+- fare preview/save/publish/rollback
+- active versions
+- import history

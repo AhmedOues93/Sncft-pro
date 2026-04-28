@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "echo 'Use Flutter app in apps/passenger/flutter_app'",
-    "build": "echo 'Flutter build handled in flutter_app'",
-    "check": "echo 'Run flutter analyze in flutter_app'"
+    "dev": "node server.mjs",
+    "build": "echo 'Static passenger app - no build step'",
+    "check": "node --check app.js"
   }
 }

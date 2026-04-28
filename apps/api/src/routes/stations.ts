@@ -1,29 +1,42 @@
 import { Router } from 'express';
 
-import { memoryStore } from '../store/memory-store.js';
+import { asyncHandler } from '../async-handler.js';
+import { rateLimit } from '../middleware/security.js';
 import { normalizeStationName } from '../services/imports.js';
+import { getImportStore } from '../store/index.js';
 
 export const stationsRouter = Router();
 
-stationsRouter.get('/stations/search', (req, res) => {
+stationsRouter.get('/stations/search', rateLimit('stations', 180), asyncHandler(async (req, res) => {
   const query = String(req.query.q ?? '').trim();
+  const limitRaw = Number(req.query.limit ?? 10);
+  const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(Math.trunc(limitRaw), 20) : 10;
+
   if (!query) {
-    res.json({ items: [] });
+    res.json({ count: 0, items: [] });
     return;
   }
 
   const normalizedQuery = normalizeStationName(query);
   const stationMap = new Map<string, string>();
 
-  memoryStore.getPublishedStops().forEach((stop) => {
+  const store = getImportStore();
+  (await store.getPublishedStops()).forEach((stop) => {
     const normalized = normalizeStationName(stop.station);
     if (!stationMap.has(normalized)) stationMap.set(normalized, stop.station);
   });
 
-  const items = Array.from(stationMap.entries())
-    .filter(([normalized]) => normalized.includes(normalizedQuery))
-    .slice(0, 10)
-    .map(([id, name]) => ({ id, name }));
+  const ranked = Array.from(stationMap.entries())
+    .map(([id, name]) => ({ id, name, normalized: normalizeStationName(name) }))
+    .filter((station) => station.normalized.includes(normalizedQuery))
+    .sort((a, b) => {
+      const aStarts = a.normalized.startsWith(normalizedQuery) ? 0 : 1;
+      const bStarts = b.normalized.startsWith(normalizedQuery) ? 0 : 1;
+      if (aStarts !== bStarts) return aStarts - bStarts;
+      return a.name.localeCompare(b.name, 'fr');
+    });
 
-  res.json({ items });
-});
+  const items = ranked.slice(0, limit).map(({ id, name }) => ({ id, name }));
+
+  res.json({ count: items.length, items });
+}));

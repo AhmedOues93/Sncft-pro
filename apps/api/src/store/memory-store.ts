@@ -1,41 +1,25 @@
 import { randomUUID } from 'node:crypto';
 
-import type { ParsedFare, ParsedStop } from '../types.js';
+import type { ImportIssue, ParsedFare, ParsedStop } from '../types.js';
+import type { ActiveVersions, DraftImportRecord, ImportKind, ImportStore } from './repository.js';
 
-interface DraftImport {
-  id: string;
-  kind: 'schedule' | 'fare';
-  createdAt: string;
-  status: 'ready' | 'failed' | 'published';
-  payload: unknown;
-  summary: Record<string, number>;
-  issues: unknown[];
-}
+class MemoryStore implements ImportStore {
+  drafts = new Map<string, DraftImportRecord>();
+  published: ActiveVersions = {};
 
-interface PublishedState {
-  scheduleImportId?: string;
-  fareImportId?: string;
-  previousScheduleImportId?: string;
-  previousFareImportId?: string;
-}
-
-class MemoryStore {
-  drafts = new Map<string, DraftImport>();
-  published: PublishedState = {};
-
-  createDraft(kind: DraftImport['kind'], payload: ParsedStop[] | ParsedFare[], summary: Record<string, number>, issues: unknown[]): DraftImport {
+  async createDraft(kind: ImportKind, payload: ParsedStop[] | ParsedFare[], summary: Record<string, number>, issues: ImportIssue[], sourceFilename?: string): Promise<DraftImportRecord> {
     const id = randomUUID();
     const status = summary.errors_count ? 'failed' : 'ready';
-    const record: DraftImport = { id, kind, createdAt: new Date().toISOString(), status, payload, summary, issues };
+    const record: DraftImportRecord = { id, kind, createdAt: new Date().toISOString(), status, payload, summary, issues, sourceFilename };
     this.drafts.set(id, record);
     return record;
   }
 
-  getDraft(id: string): DraftImport | undefined {
+  async getDraft(id: string): Promise<DraftImportRecord | undefined> {
     return this.drafts.get(id);
   }
 
-  publishDraft(id: string): DraftImport {
+  async publishDraft(id: string): Promise<DraftImportRecord> {
     const draft = this.drafts.get(id);
     if (!draft) throw new Error('Draft not found');
     if (draft.status === 'failed') throw new Error('Draft has errors');
@@ -54,7 +38,7 @@ class MemoryStore {
     return draft;
   }
 
-  rollback(id: string): DraftImport {
+  async rollback(id: string): Promise<DraftImportRecord> {
     const draft = this.drafts.get(id);
     if (!draft) throw new Error('Draft not found');
 
@@ -70,16 +54,25 @@ class MemoryStore {
     return draft;
   }
 
-  getPublishedStops(): ParsedStop[] {
+  async getPublishedStops(): Promise<ParsedStop[]> {
     if (!this.published.scheduleImportId) return [];
     const schedule = this.drafts.get(this.published.scheduleImportId);
     return (schedule?.payload as ParsedStop[]) ?? [];
   }
 
-  getPublishedFares(): ParsedFare[] {
+  async getPublishedFares(): Promise<ParsedFare[]> {
     if (!this.published.fareImportId) return [];
     const fare = this.drafts.get(this.published.fareImportId);
     return (fare?.payload as ParsedFare[]) ?? [];
+  }
+
+  async listDrafts(kind?: ImportKind): Promise<DraftImportRecord[]> {
+    const items = Array.from(this.drafts.values()).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return kind ? items.filter((item) => item.kind === kind) : items;
+  }
+
+  async getActiveVersions(): Promise<ActiveVersions> {
+    return { ...this.published };
   }
 }
 
