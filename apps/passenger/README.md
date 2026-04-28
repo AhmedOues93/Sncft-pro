@@ -1,3 +1,15 @@
-# Passenger App (Phase 1 Placeholder)
+# Passenger app (functional integration)
 
-Flutter passenger application will be implemented in later phases.
+Run:
+
+```bash
+npm run dev:passenger
+```
+
+Default URL: `http://localhost:4174`
+
+Features:
+- station suggestions from API
+- journey search with datetime/passengers/pagination
+- direct + transfer result cards
+- details view with stop timeline and deduped transfer stop
