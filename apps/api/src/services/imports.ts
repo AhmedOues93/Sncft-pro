@@ -147,6 +147,7 @@ export function previewFaresCsv(csvText: string): FarePreview {
       destination: normalizeStationName(row.destination || row.destination_station || row.destination_station_id || ''),
       amount,
       currency: row.currency || 'TND',
+      fareType: row.fare_type || row.ticket_type || row.fare_class || 'normal',
     };
   });
 
