@@ -3,30 +3,771 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SNCFT Passenger MVP</title>
+    <title>SNCFT Navigator</title>
     <style>
-      body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 980px; }
-      .row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.75rem 0; }
-      input, button { padding: 0.45rem 0.6rem; }
-      .card { border: 1px solid #ddd; padding: 0.75rem; margin-bottom: 0.5rem; border-radius: 6px; }
+      :root {
+        --navy: #061b35;
+        --navy2: #0b2d57;
+        --blue: #1267d8;
+        --teal: #18b7c8;
+        --soft: #f3f6fb;
+        --ink: #132033;
+        --muted: #6b7890;
+        --card: rgba(255,255,255,.96);
+        --shadow: 0 24px 70px rgba(6,27,53,.18);
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at 10% 0%, rgba(24,183,200,.18), transparent 32%),
+          radial-gradient(circle at 90% 12%, rgba(18,103,216,.18), transparent 26%),
+          var(--soft);
+        color: var(--ink);
+      }
+
+      .page {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 26px 18px 60px;
+      }
+
+      .phone-shell {
+        max-width: 430px;
+        margin: 0 auto;
+        background: #eef3f9;
+        min-height: 860px;
+        border-radius: 42px;
+        padding: 14px;
+        box-shadow: 0 36px 100px rgba(6,27,53,.30);
+        border: 1px solid rgba(255,255,255,.75);
+      }
+
+      .app {
+        min-height: 832px;
+        background: var(--soft);
+        border-radius: 32px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 18px 18px 10px;
+      }
+
+      .logo {
+        width: 52px;
+        height: 52px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, var(--blue), var(--teal));
+        color: white;
+        display: grid;
+        place-items: center;
+        font-weight: 900;
+        line-height: .9;
+        box-shadow: 0 14px 30px rgba(18,103,216,.28);
+      }
+
+      .brand { flex: 1; }
+      .brand strong {
+        display: block;
+        font-size: 22px;
+        letter-spacing: -.03em;
+      }
+      .brand span {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .bell {
+        width: 42px;
+        height: 42px;
+        border: 0;
+        border-radius: 16px;
+        background: white;
+        box-shadow: 0 12px 30px rgba(6,27,53,.10);
+        cursor: pointer;
+      }
+
+      .hero {
+        height: 310px;
+        margin: 0;
+        border-radius: 0 0 34px 34px;
+        overflow: hidden;
+        position: relative;
+        box-shadow: var(--shadow);
+        background: linear-gradient(135deg, var(--navy), var(--blue));
+      }
+
+      .hero-slide {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        transition: opacity .55s ease;
+      }
+
+      .hero-slide.active { opacity: 1; }
+      .hero-slide img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: scale(1.03);
+      }
+
+      .hero::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(120deg, rgba(6,27,53,.86), rgba(6,27,53,.16) 48%, rgba(6,27,53,.82)),
+          linear-gradient(0deg, rgba(6,27,53,.35), transparent);
+        pointer-events: none;
+      }
+
+      .hero-content {
+        position: absolute;
+        z-index: 2;
+        left: 22px;
+        right: 22px;
+        bottom: 20px;
+        color: white;
+      }
+
+      .sncft-mark {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 900;
+        letter-spacing: .08em;
+        font-size: 13px;
+        padding: 8px 10px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.16);
+        backdrop-filter: blur(10px);
+      }
+
+      .hero h1 {
+        margin: 12px 0 4px;
+        font-size: 28px;
+        line-height: 1;
+        letter-spacing: -.04em;
+      }
+
+      .hero p {
+        margin: 0;
+        color: rgba(255,255,255,.78);
+        font-size: 13px;
+      }
+
+      .dots {
+        position: absolute;
+        z-index: 3;
+        right: 18px;
+        bottom: 18px;
+        display: flex;
+        gap: 6px;
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.55);
+      }
+      .dot.active {
+        width: 24px;
+        background: white;
+      }
+
+      .search-card {
+        margin: -56px 18px 0;
+        position: relative;
+        z-index: 4;
+        background: var(--card);
+        border-radius: 30px;
+        padding: 17px;
+        box-shadow: 0 24px 60px rgba(6,27,53,.17);
+        border: 1px solid rgba(255,255,255,.75);
+      }
+
+      .field {
+        background: #f7f9fc;
+        border-radius: 20px;
+        padding: 13px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      .field-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 16px;
+        display: grid;
+        place-items: center;
+        background: #e7f1ff;
+        color: var(--blue);
+        font-size: 20px;
+      }
+
+      .field small {
+        color: var(--muted);
+        display: block;
+        font-size: 12px;
+      }
+
+      .field b {
+        display: block;
+        font-size: 17px;
+      }
+
+      .swap-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0 0 8px;
+      }
+      .swap-row::before, .swap-row::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: #dde6f1;
+      }
+      .swap {
+        width: 42px;
+        height: 42px;
+        border: 0;
+        border-radius: 50%;
+        color: white;
+        background: linear-gradient(135deg, var(--blue), var(--teal));
+        font-size: 20px;
+        cursor: pointer;
+      }
+
+      .filters {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin: 14px 0 16px;
+      }
+
+      .filter {
+        background: #f7f9fc;
+        border-radius: 18px;
+        padding: 11px;
+      }
+      .filter span {
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+        margin-top: 6px;
+      }
+      .filter b { font-size: 13px; }
+
+      .primary {
+        width: 100%;
+        height: 55px;
+        border: 0;
+        border-radius: 20px;
+        color: white;
+        background: linear-gradient(135deg, var(--blue), #0d56bb);
+        font-weight: 900;
+        font-size: 16px;
+        box-shadow: 0 16px 35px rgba(18,103,216,.28);
+        cursor: pointer;
+      }
+
+      .quick {
+        padding: 18px 18px 110px;
+      }
+      .section-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 6px 0 12px;
+      }
+      .section-title h2 {
+        margin: 0;
+        font-size: 20px;
+        letter-spacing: -.03em;
+      }
+      .section-title a {
+        color: var(--blue);
+        font-weight: 800;
+        font-size: 13px;
+      }
+
+      .popular {
+        background: white;
+        border-radius: 22px;
+        padding: 13px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 12px 32px rgba(6,27,53,.07);
+        cursor: pointer;
+      }
+
+      .line {
+        width: 38px;
+        height: 38px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, var(--blue), var(--teal));
+        color: white;
+        display: grid;
+        place-items: center;
+        font-weight: 900;
+      }
+
+      .popular b { display: block; }
+      .popular small { color: var(--muted); }
+
+      .bottom-nav {
+        position: absolute;
+        left: 14px;
+        right: 14px;
+        bottom: 14px;
+        height: 72px;
+        border-radius: 28px;
+        background: white;
+        box-shadow: 0 18px 50px rgba(6,27,53,.18);
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        align-items: center;
+      }
+
+      .nav-item {
+        text-align: center;
+        color: #7c8798;
+        font-size: 11px;
+        font-weight: 800;
+      }
+      .nav-item span {
+        display: block;
+        font-size: 22px;
+        margin-bottom: 2px;
+      }
+      .nav-item.active { color: var(--blue); }
+
+      .view { display: none; }
+      .view.active { display: block; }
+
+      .results-header {
+        padding: 18px;
+        background: linear-gradient(135deg, var(--navy), var(--blue));
+        color: white;
+        border-radius: 0 0 34px 34px;
+      }
+
+      .results-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .back {
+        width: 42px;
+        height: 42px;
+        border: 0;
+        border-radius: 15px;
+        background: rgba(255,255,255,.14);
+        color: white;
+        cursor: pointer;
+      }
+
+      .route-card {
+        background: white;
+        margin: -28px 18px 14px;
+        border-radius: 26px;
+        padding: 15px;
+        position: relative;
+        z-index: 2;
+        box-shadow: 0 18px 50px rgba(6,27,53,.14);
+      }
+
+      .pills {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .pill {
+        flex: 1;
+        border: 1px solid #d9e5f2;
+        background: white;
+        color: var(--blue);
+        border-radius: 999px;
+        padding: 10px 8px;
+        font-weight: 900;
+        cursor: pointer;
+      }
+      .pill.active {
+        background: var(--blue);
+        color: white;
+      }
+
+      .journey-list {
+        padding: 0 18px 110px;
+      }
+
+      .journey {
+        background: white;
+        border-radius: 26px;
+        padding: 15px;
+        margin-bottom: 13px;
+        box-shadow: 0 14px 36px rgba(6,27,53,.08);
+      }
+
+      .journey-top {
+        display: grid;
+        grid-template-columns: 74px 1fr 74px;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .time {
+        font-size: 21px;
+        font-weight: 950;
+      }
+      .station {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.2;
+      }
+
+      .route-line {
+        text-align: center;
+      }
+      .badge {
+        display: inline-block;
+        background: rgba(24,183,200,.12);
+        color: var(--teal);
+        border-radius: 999px;
+        padding: 5px 9px;
+        font-size: 12px;
+        font-weight: 900;
+        margin-bottom: 8px;
+      }
+
+      .rail {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .rail::before, .rail::after {
+        content: "";
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--blue);
+      }
+      .rail div {
+        flex: 1;
+        height: 2px;
+        background: #d5e2f0;
+      }
+
+      .duration {
+        margin-top: 6px;
+        font-weight: 900;
+        font-size: 13px;
+      }
+
+      .journey-meta {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        margin-top: 14px;
+      }
+      .journey-meta .train {
+        flex: 1;
+        font-weight: 900;
+      }
+      .fare {
+        color: var(--blue);
+        font-weight: 950;
+      }
+      .details {
+        margin-top: 12px;
+        width: 100%;
+        height: 42px;
+        border-radius: 16px;
+        border: 1px solid #d8e5f3;
+        background: white;
+        color: var(--blue);
+        font-weight: 900;
+        cursor: pointer;
+      }
+
+      .timeline {
+        padding: 18px 18px 110px;
+      }
+      .details-hero {
+        background: linear-gradient(135deg, var(--navy), var(--blue));
+        color: white;
+        border-radius: 28px;
+        padding: 18px;
+        margin-bottom: 18px;
+      }
+      .stop {
+        display: grid;
+        grid-template-columns: 55px 22px 1fr;
+        gap: 11px;
+        align-items: start;
+      }
+      .stop-time { font-weight: 950; }
+      .stop-dot {
+        width: 14px;
+        height: 14px;
+        background: var(--blue);
+        border-radius: 50%;
+        margin-top: 4px;
+        position: relative;
+      }
+      .stop-dot::after {
+        content: "";
+        position: absolute;
+        left: 6px;
+        top: 14px;
+        width: 2px;
+        height: 48px;
+        background: #d6e2f0;
+      }
+      .stop:last-child .stop-dot::after { display: none; }
+      .stop-name {
+        background: white;
+        border-radius: 18px;
+        padding: 13px;
+        font-weight: 900;
+        margin-bottom: 12px;
+      }
+
+      @media (min-width: 900px) {
+        .page {
+          display: grid;
+          grid-template-columns: 430px 1fr;
+          gap: 34px;
+          align-items: start;
+        }
+        .intro {
+          display: block;
+          padding-top: 80px;
+        }
+      }
+
+      .intro {
+        display: none;
+      }
+      .intro h1 {
+        font-size: 58px;
+        line-height: .95;
+        letter-spacing: -.06em;
+        margin: 0 0 16px;
+      }
+      .intro p {
+        color: var(--muted);
+        font-size: 18px;
+        max-width: 520px;
+      }
+    
+      /* refined full-bleed SNCFT direction */
+      .topbar { display: none !important; }
+      .hero-content {
+        left: 24px !important;
+        right: 24px !important;
+        bottom: 78px !important;
+      }
+      .hero h1 {
+        font-size: 31px !important;
+        max-width: 280px;
+      }
+      .sncft-mark {
+        background: rgba(255,255,255,.13) !important;
+        border: 1px solid rgba(255,255,255,.18);
+      }
+      .dots {
+        left: 24px !important;
+        right: auto !important;
+        bottom: 38px !important;
+      }
+      .search-card { border-radius: 28px !important; }
+      .field-icon {
+        background: linear-gradient(135deg, rgba(18,103,216,.12), rgba(24,183,200,.16)) !important;
+        color: var(--blue) !important;
+      }
+      .bell, .logo { display: none !important; }
     </style>
   </head>
   <body>
-    <h1>SNCFT Passenger MVP (Scaffold)</h1>
-    <div class="row">
-      <input id="origin" placeholder="originStationId" value="st_tunis" />
-      <input id="destination" placeholder="destinationStationId" value="st_erriadh" />
-      <input id="datetime" type="datetime-local" />
-      <input id="passengers" type="number" min="1" value="1" />
-    </div>
-    <div class="row">
-      <button id="earlier">Plus tôt</button>
-      <button id="now">Maintenant</button>
-      <button id="later">Plus tard</button>
-      <button id="search">Search</button>
-    </div>
-    <div id="results"></div>
+    <main class="page">
+      <section class="phone-shell">
+        <div class="app">
+          <section id="home" class="view active">
+            <section class="hero">
+              <div class="hero-slide active"><img src="./assets/images/train_1.png" alt="Train SNCFT 1"></div>
+              <div class="hero-slide"><img src="./assets/images/train_2.png" alt="Train SNCFT 2"></div>
+              <div class="hero-slide"><img src="./assets/images/train_3.png" alt="Train SNCFT 3"></div>
+              <div class="hero-content">
+                <div class="sncft-mark">SNCFT</div>
+                <h1>Planifiez votre trajet</h1>
+                <p>Horaires, correspondances et tarifs SNCFT.</p>
+              </div>
+              <div class="dots">
+                <div class="dot active"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+              </div>
+            </section>
+
+            <section class="search-card">
+              <div class="field">
+                <div class="field-icon">⌖</div>
+                <div><small>Départ</small><b id="originLabel">Tunis Ville</b></div>
+              </div>
+              <div class="swap-row"><button class="swap" id="swapBtn">⇅</button></div>
+              <div class="field">
+                <div class="field-icon">⌁</div>
+                <div><small>Destination</small><b id="destinationLabel">Hammam Lif</b></div>
+              </div>
+
+              <div class="filters">
+                <div class="filter">📅<span>Date</span><b>Aujourd’hui</b></div>
+                <div class="filter">🕘<span>Heure</span><b>Maintenant</b></div>
+                <div class="filter">👥<span>Personnes</span><b>1</b></div>
+              </div>
+
+              <button class="primary" id="searchBtn">Rechercher</button>
+            </section>
+
+            <section class="quick">
+              <div class="section-title">
+                <h2>Trajets populaires</h2>
+                <a>Voir tout</a>
+              </div>
+
+              <div class="popular" data-open-results>
+                <div class="line">A</div>
+                <div><b>Tunis Ville → Hammam Lif</b><small>Direct · 45 min · dès 1.700 TND</small></div>
+              </div>
+              <div class="popular" data-open-results>
+                <div class="line">E</div>
+                <div><b>Tunis Ville → Bougatfa</b><small>Direct · 38 min · dès 1.500 TND</small></div>
+              </div>
+              <div class="popular" data-open-results>
+                <div class="line">D</div>
+                <div><b>Ezzouhour 2 → Mellassine</b><small>Via Tunis Ville · 2 h 18</small></div>
+              </div>
+            </section>
+          </section>
+
+          <section id="results" class="view">
+            <header class="results-header">
+              <div class="results-title">
+                <button class="back" data-view="home">←</button>
+                <div>
+                  <h2 style="margin:0">Résultats</h2>
+                  <small style="color:rgba(255,255,255,.75)">5 trajets disponibles</small>
+                </div>
+              </div>
+            </header>
+
+            <section class="route-card">
+              <b>Tunis Ville → Hammam Lif</b>
+              <div style="color:var(--muted); margin-top:4px">Aujourd’hui · Maintenant · 1 passager</div>
+              <div class="pills">
+                <button class="pill">Plus tôt</button>
+                <button class="pill active">Maintenant</button>
+                <button class="pill">Plus tard</button>
+              </div>
+            </section>
+
+            <section class="journey-list" id="journeyList"></section>
+          </section>
+
+          <section id="details" class="view">
+            <header class="results-header">
+              <div class="results-title">
+                <button class="back" data-view="results">←</button>
+                <div>
+                  <h2 style="margin:0">Détails du trajet</h2>
+                  <small style="color:rgba(255,255,255,.75)">Arrêts et horaires</small>
+                </div>
+              </div>
+            </header>
+
+            <section class="timeline">
+              <div class="details-hero">
+                <h2 style="margin:0 0 6px">Tunis Ville → Hammam Lif</h2>
+                <div>45 min · 1.700 TND · Train A101</div>
+              </div>
+              <div id="timelineStops"></div>
+            </section>
+          </section>
+
+          <nav class="bottom-nav">
+            <div class="nav-item active"><span>⌂</span>Accueil</div>
+            <div class="nav-item"><span>▣</span>Billets</div>
+            <div class="nav-item"><span>♡</span>Favoris</div>
+            <div class="nav-item"><span>◌</span>Profil</div>
+          </nav>
+        </div>
+      </section>
+
+      <section class="intro">
+        <h1>SNCFT Navigator<br/>design system</h1>
+        <p>Prototype visuel premium avec slider SNCFT, recherche rapide, résultats type DB Navigator et timeline d’arrêts. La même identité sera appliquée au dashboard admin.</p>
+      </section>
+    </main>
 
     <script type="module" src="./main.js"></script>
   </body>
 </html>
+
+
+/* refined full-bleed SNCFT direction */
+.topbar { display: none !important; }
+
+.hero-content {
+  left: 24px !important;
+  right: 24px !important;
+  bottom: 78px !important;
+}
+
+.hero h1 {
+  font-size: 31px !important;
+  max-width: 280px;
+}
+
+.sncft-mark {
+  background: rgba(255,255,255,.13) !important;
+  border: 1px solid rgba(255,255,255,.18);
+}
+
+.dots {
+  left: 24px !important;
+  right: auto !important;
+  bottom: 38px !important;
+}
+
+.search-card {
+  border-radius: 28px !important;
+}
+
+.field-icon {
+  background: linear-gradient(135deg, rgba(18,103,216,.12), rgba(24,183,200,.16)) !important;
+  color: var(--blue) !important;
+}
+
+.bell, .logo { display: none !important; }
+
+.nav-item span,
+.field-icon,
+.filter {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
