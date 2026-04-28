@@ -85,7 +85,14 @@ export class ScheduleImportService {
       sourceChecksumSha256: createHash('sha256').update(csvText).digest('hex'),
       status,
       summary,
-      issues: validation.issues,
+      issues: validation.issues.map((issue) => ({
+        sourceFile: issue.sourceFile ?? 'schedules.csv',
+        rowNumber: issue.rowNumber ?? 0,
+        fieldName: issue.fieldName ?? '',
+        code: issue.code ?? 'VALIDATION_ISSUE',
+        severity: issue.severity,
+        message: issue.message,
+      })),
       trips: normalized.trips.map((trip) => ({
         external_trip_id: trip.externalTripId,
         line_code: trip.lineCode,

@@ -12,18 +12,73 @@ const REQUIRED_COLUMNS = [
 ];
 
 function parseCsvLine(line) {
-  return line.split(',').map((value) => value.trim());
+  const values = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i += 1) {
+    const char = line[i];
+    const next = line[i + 1];
+
+    if (char === '"' && inQuotes && next === '"') {
+      current += '"';
+      i += 1;
+      continue;
+    }
+
+    if (char === '"') {
+      inQuotes = !inQuotes;
+      continue;
+    }
+
+    if (char === ',' && !inQuotes) {
+      values.push(current.trim());
+      current = '';
+      continue;
+    }
+
+    current += char;
+  }
+
+  values.push(current.trim());
+  return values;
+}
+
+function normalizeHeader(header) {
+  return String(header)
+    .trim()
+    .toLowerCase()
+    .replace(/\uFEFF/g, '')
+    .replace(/\s+/g, '_');
+}
+
+function firstValue(row, keys, fallback = '') {
+  for (const key of keys) {
+    const value = row[key];
+    if (value !== undefined && value !== null && String(value).trim() !== '') {
+      return String(value).trim();
+    }
+  }
+  return fallback;
+}
+
+function padTime(raw) {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(String(raw).trim());
+  if (!match) return String(raw).trim();
+
+  return `${String(Number(match[1])).padStart(2, '0')}:${match[2]}`;
 }
 
 export function parseCsv(csvText) {
-  const lines = csvText
+  const lines = String(csvText || '')
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
 
   if (lines.length === 0) return [];
 
-  const headers = parseCsvLine(lines[0]).map((header) => header.toLowerCase());
+  const headers = parseCsvLine(lines[0]).map(normalizeHeader);
+
   return lines.slice(1).map((line) => {
     const values = parseCsvLine(line);
     const row = {};
@@ -45,7 +100,7 @@ export function parseFareCsv(csvText) {
 }
 
 export function normalizeStationName(name) {
-  return String(name)
+  return String(name || '')
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-zA-Z0-9\s]/g, ' ')
@@ -55,58 +110,96 @@ export function normalizeStationName(name) {
 }
 
 export function normalizeTime(timeValue) {
-  const match = /^(\d{1,2}):(\d{2})$/.exec(String(timeValue).trim());
+  const value = String(timeValue || '').trim();
+  const match = /^(\d{1,2}):(\d{2})$/.exec(value);
+
   if (!match) throw new Error(`Invalid time format: ${timeValue}`);
 
   const hours = Number(match[1]);
   const minutes = Number(match[2]);
-  if (hours < 0 || hours > 47 || minutes < 0 || minutes > 59) throw new Error(`Invalid time value: ${timeValue}`);
+
+  if (hours < 0 || hours > 47 || minutes < 0 || minutes > 59) {
+    throw new Error(`Invalid time value: ${timeValue}`);
+  }
 
   return hours * 60 + minutes;
 }
 
+function buildTripKey(row) {
+  const tripId = firstValue(row, ['trip_id', 'external_trip_id']);
+  if (tripId) return tripId;
+
+  const lineCode = firstValue(row, ['line', 'line_code'], 'UNKNOWN');
+  const trainNumber = firstValue(row, ['train_number', 'train'], 'UNKNOWN');
+  const direction = firstValue(row, ['direction'], 'unknown');
+  const serviceCode = firstValue(row, ['service_code', 'service_id'], 'daily');
+
+  return `${lineCode}:${trainNumber}:${direction}:${serviceCode}`;
+}
+
 export function detectOvernightStops(rows) {
-  const byTripKey = new Map();
+  const byTrip = new Map();
 
   for (const row of rows) {
-    const tripId = row.trip_id ?? `${row.line}:${row.train_number}:${row.direction}:${row.service_code}`;
-    if (!byTrip.has(tripId)) byTrip.set(tripId, []);
-    byTrip.get(tripId).push(row);
+    const tripKey = buildTripKey(row);
+    if (!byTrip.has(tripKey)) byTrip.set(tripKey, []);
+    byTrip.get(tripKey).push(row);
   }
 
   const normalizedStops = [];
 
-  for (const [tripId, tripRows] of byTrip.entries()) {
-    tripRows.sort((a, b) => Number(a.stop_sequence ?? a.station_order) - Number(b.stop_sequence ?? b.station_order));
+  for (const [tripKey, tripRows] of byTrip.entries()) {
+    tripRows.sort((a, b) => {
+      const aOrder = Number(firstValue(a, ['stop_sequence', 'station_order'], '0'));
+      const bOrder = Number(firstValue(b, ['stop_sequence', 'station_order'], '0'));
+      return aOrder - bOrder;
+    });
 
     let dayOffset = 0;
     let previousDepartureMinutes = null;
 
     for (const row of tripRows) {
-      const arr = row.arrival_time || row.time || row.departure_time;
-      const dep = row.departure_time || row.time || row.arrival_time;
-      const arrivalRaw = normalizeTime(arr);
-      const departureRaw = normalizeTime(dep);
+      const arrivalRaw = firstValue(row, ['arrival_time', 'time', 'departure_time']);
+      const departureRaw = firstValue(row, ['departure_time', 'time', 'arrival_time']);
 
-      if (previousDeparture >= 0 && arrivalRaw < previousDeparture % (24 * 60)) dayOffset += 1;
+      const arrivalBaseMinutes = normalizeTime(arrivalRaw);
+      const departureBaseMinutes = normalizeTime(departureRaw);
 
-      const arrivalMinutes = arrivalRaw + dayOffset * 24 * 60;
-      let departureMinutes = departureRaw + dayOffset * 24 * 60;
-      if (departureMinutes < arrivalMinutes) departureMinutes += 24 * 60;
+      if (
+        previousDepartureMinutes !== null &&
+        arrivalBaseMinutes < previousDepartureMinutes % (24 * 60)
+      ) {
+        dayOffset += 1;
+      }
 
-      normalized.push({
-        tripId,
-        lineCode: row.line_code ?? row.line,
-        serviceId: row.service_id ?? row.service_code,
-        stationId: row.station_id ?? normalizeStationName(row.station),
-        stationName: row.station ?? row.station_name,
-        stopSequence: Number(row.stop_sequence ?? row.station_order),
-        arrivalTimeRaw: arr,
-        departureTimeRaw: dep,
+      const arrivalMinutes = arrivalBaseMinutes + dayOffset * 24 * 60;
+      let departureMinutes = departureBaseMinutes + dayOffset * 24 * 60;
+
+      if (departureMinutes < arrivalMinutes) {
+        departureMinutes += 24 * 60;
+      }
+
+      normalizedStops.push({
+        ...row,
+        tripKey,
+        externalTripId: tripKey,
+        lineCode: firstValue(row, ['line', 'line_code'], 'UNKNOWN'),
+        lineName: firstValue(row, ['line_name'], ''),
+        season: firstValue(row, ['season'], ''),
+        validFrom: firstValue(row, ['valid_from', 'validFrom'], ''),
+        validTo: firstValue(row, ['valid_to', 'validTo'], ''),
+        direction: firstValue(row, ['direction'], ''),
+        serviceCode: firstValue(row, ['service_code', 'service_id'], 'daily'),
+        trainNumber: firstValue(row, ['train_number', 'train'], ''),
+        stationId: firstValue(row, ['station_id'], normalizeStationName(firstValue(row, ['station', 'station_name']))),
+        stationName: firstValue(row, ['station', 'station_name']),
+        stationOrder: Number(firstValue(row, ['station_order', 'stop_sequence'], '0')),
+        stopSequence: Number(firstValue(row, ['station_order', 'stop_sequence'], '0')),
+        arrivalDisplayTime: padTime(arrivalRaw),
+        departureDisplayTime: padTime(departureRaw),
         arrivalMinutes,
         departureMinutes,
         dayOffset,
-        trainNumber: row.train_number || undefined,
       });
 
       previousDepartureMinutes = departureMinutes;
@@ -117,17 +210,73 @@ export function detectOvernightStops(rows) {
 }
 
 function validateRequiredFields(row, rowNumber, issues) {
+  const hasTrip = Boolean(firstValue(row, ['trip_id', 'train_number', 'train']));
+  const hasStation = Boolean(firstValue(row, ['station_id', 'station', 'station_name']));
+
+  if (!hasTrip) {
+    issues.push({
+      severity: 'error',
+      sourceFile: 'schedules.csv',
+      rowNumber,
+      fieldName: 'trip_id',
+      code: 'TRIP_REQUIRED',
+      message: 'trip/train identifier required',
+    });
+  }
+
+  if (!hasStation) {
+    issues.push({
+      severity: 'error',
+      sourceFile: 'schedules.csv',
+      rowNumber,
+      fieldName: 'station',
+      code: 'STATION_REQUIRED',
+      message: 'station required',
+    });
+  }
+
   for (const field of REQUIRED_COLUMNS) {
-    if (!String(row[field] || '').trim()) {
+    const relaxedAlternativeExists =
+      (field === 'line' && firstValue(row, ['line', 'line_code'])) ||
+      (field === 'station_order' && firstValue(row, ['station_order', 'stop_sequence'])) ||
+      (field === 'station' && firstValue(row, ['station', 'station_name', 'station_id']));
+
+    if (!String(row[field] || '').trim() && !relaxedAlternativeExists) {
       issues.push({
-        severity: 'error',
+        severity: 'warning',
         sourceFile: 'schedules.csv',
         rowNumber,
         fieldName: field,
-        code: 'REQUIRED_FIELD_MISSING',
-        message: `${field} is required`,
+        code: 'OPTIONAL_FIELD_MISSING',
+        message: `${field} is missing`,
       });
     }
+  }
+
+  const order = Number(firstValue(row, ['station_order', 'stop_sequence'], '0'));
+  if (!Number.isInteger(order) || order <= 0) {
+    issues.push({
+      severity: 'error',
+      sourceFile: 'schedules.csv',
+      rowNumber,
+      fieldName: 'station_order',
+      code: 'STATION_ORDER_INVALID',
+      message: 'station_order must be a positive integer',
+    });
+  }
+
+  const timeValue = firstValue(row, ['arrival_time', 'departure_time', 'time']);
+  try {
+    normalizeTime(timeValue);
+  } catch {
+    issues.push({
+      severity: 'error',
+      sourceFile: 'schedules.csv',
+      rowNumber,
+      fieldName: 'time',
+      code: 'TIME_INVALID',
+      message: 'time must use HH:mm format',
+    });
   }
 }
 
@@ -163,8 +312,10 @@ function buildNormalizedImportOutput(validRows) {
     trips: Array.from(tripMap.values()),
     stopTimes: validRows.map((row) => ({
       externalTripId: row.tripKey,
+      stationId: row.stationId,
       stationName: row.stationName,
       stationOrder: row.stationOrder,
+      stopSequence: row.stopSequence,
       arrivalDisplayTime: row.arrivalDisplayTime,
       departureDisplayTime: row.departureDisplayTime,
       arrivalMinutes: row.arrivalMinutes,
@@ -179,34 +330,57 @@ export function validateScheduleRows(rows) {
   const issues = [];
 
   rows.forEach((row, index) => {
-    const rowNumber = index + 2;
-    if (!(row.trip_id || row.train_number)) issues.push({ severity: 'error', sourceFile: 'schedules.csv', rowNumber, fieldName: 'trip_id', code: 'TRIP_REQUIRED', message: 'trip/train identifier required' });
-    if (!(row.station_id || row.station)) issues.push({ severity: 'error', sourceFile: 'schedules.csv', rowNumber, fieldName: 'station', code: 'STATION_REQUIRED', message: 'station required' });
-  }
+    validateRequiredFields(row, index + 2, issues);
+  });
 
   let validRows = [];
+  let normalized = {
+    trips: [],
+    stopTimes: [],
+    calendars: [],
+  };
+
   if (!issues.some((issue) => issue.severity === 'error')) {
     validRows = detectOvernightStops(rows);
+    normalized = buildNormalizedImportOutput(validRows);
   }
 
-  return { validRows, issues };
+  return {
+    validRows,
+    normalized,
+    normalizedOutput: normalized,
+    issues: issues.map((issue) => ({
+      sourceFile: 'schedules.csv',
+      code: 'VALIDATION_ISSUE',
+      ...issue,
+    })),
+  };
 }
 
 export function parseAndValidateFares(rows) {
   const issues = [];
+
   const fares = rows.map((row, index) => {
     const rowNumber = index + 2;
-    const amount = Number(row.amount || row.fare || 0);
+    const amount = Number(firstValue(row, ['amount', 'fare', 'price', 'tarif'], '0'));
+
     if (!Number.isFinite(amount) || amount < 0) {
-      issues.push({ severity: 'error', sourceFile: 'fares.csv', rowNumber, fieldName: 'amount', code: 'FARE_INVALID', message: 'Fare amount must be >= 0' });
+      issues.push({
+        severity: 'error',
+        sourceFile: 'fares.csv',
+        rowNumber,
+        fieldName: 'amount',
+        code: 'FARE_INVALID',
+        message: 'Fare amount must be >= 0',
+      });
     }
 
     return {
-      lineCode: row.line || row.line_code || 'ALL',
-      origin: normalizeStationName(row.origin || row.origin_station || row.origin_station_id || ''),
-      destination: normalizeStationName(row.destination || row.destination_station || row.destination_station_id || ''),
+      lineCode: firstValue(row, ['line', 'line_code'], 'ALL'),
+      origin: normalizeStationName(firstValue(row, ['origin', 'origin_station', 'origin_station_id'])),
+      destination: normalizeStationName(firstValue(row, ['destination', 'destination_station', 'destination_station_id'])),
       amount,
-      currency: row.currency || 'TND',
+      currency: firstValue(row, ['currency'], 'TND'),
     };
   });
 
