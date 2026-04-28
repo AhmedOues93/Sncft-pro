@@ -1,80 +1,52 @@
-# SNCFT Navigator (Phase 2 Foundation)
+# SNCFT Navigator Pro MVP
 
-Monorepo scaffold for SNCFT Navigator Pro with:
+Monorepo MVP for SNCFT Navigator Pro (API + import-engine + admin dashboard + Flutter passenger app scaffold).
 
-- API skeleton (Node.js + Express + TypeScript)
-- Supabase/Postgres migration schema (GTFS-like core tables)
-- CSV import contract documentation
-- Import-engine normalization/validation skeleton and tests
+## Workspaces
 
-## Structure
+- `apps/api`: Express TypeScript backend
+- `apps/admin`: static French admin dashboard MVP
+- `apps/passenger/flutter_app`: Flutter passenger UI MVP
+- `packages/import-engine`: reusable CSV parsing/validation utilities
+- `supabase/migrations`: GTFS-like database schema
 
-```text
-apps/
-  api/
-  passenger/        # placeholder only (not implemented yet)
-  admin/            # placeholder only (not implemented yet)
-packages/
-  shared-types/
-  import-engine/
-docs/
-  csv-import-contract.md
-supabase/
-  migrations/
-```
-
-## Implemented API endpoint (current)
-
-- `GET /health`
-
-## Database schema (Phase 2)
-
-Migration file:
-
-- `supabase/migrations/20260427_000001_phase2_schema.sql`
-
-Tables included:
-
-- `lines`
-- `stations`
-- `station_aliases`
-- `trips`
-- `stop_times`
-- `calendars`
-- `fares`
-- `transfers`
-- `imports`
-- `import_issues`
-
-## CSV contract docs
-
-See:
-
-- `docs/csv-import-contract.md`
-
-## Import engine skeleton
-
-Functions included:
-
-- `parseScheduleCsv`
-- `validateScheduleRows`
-- `normalizeStationName`
-- `normalizeTime`
-- `detectOvernightStops`
-
-Tests cover:
-
-- overnight time normalization (`23:30` -> `00:11` next day)
-- partial trips validity
-
-Run import-engine tests:
+## Quick start
 
 ```bash
-npm run test -w @sncft/import-engine
+npm install
+npm run dev:api
 ```
 
-## Security
+In another terminal:
 
-- No secrets committed.
-- API is intended to be the only layer using Supabase service-role key.
-- Passenger/Admin frontends must call API, not Supabase directly.
+```bash
+npm run dev:admin
+```
+
+Flutter:
+
+```bash
+cd apps/passenger/flutter_app
+flutter pub get
+flutter analyze
+flutter run
+```
+
+## API endpoints
+
+- `GET /health`
+- `GET /stations/search?q=`
+- `GET /journeys/search?originStationId=&destinationStationId=&datetime=&passengers=&offset=&limit=`
+- `POST /admin/imports/schedules/preview`
+- `POST /admin/imports/schedules`
+- `GET /admin/imports/:id/preview`
+- `POST /admin/imports/:id/publish`
+- `POST /admin/imports/:id/rollback`
+- `POST /admin/imports/fares/preview`
+- `POST /admin/imports/fares`
+- `GET /admin/imports/fares/:id/preview`
+- `POST /admin/imports/fares/:id/publish`
+
+## Notes
+
+Current persistence mode is in-memory runtime store in API (suitable for local MVP/dev). Supabase schema is ready and should be wired for production persistence.

@@ -1,3 +1,7 @@
-# Passenger App (Phase 1 Placeholder)
+# Passenger App
 
-Flutter passenger application will be implemented in later phases.
+Main passenger client is Flutter:
+
+- `apps/passenger/flutter_app`
+
+Web package is kept as lightweight placeholder for workspace consistency.

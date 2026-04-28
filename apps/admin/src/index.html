@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SNCFT Admin MVP</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 900px; }
+      textarea { width: 100%; min-height: 180px; }
+      .row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.75rem 0; }
+      button { padding: 0.5rem 0.75rem; }
+      pre { background: #f5f5f5; padding: 0.75rem; overflow-x: auto; }
+    </style>
+  </head>
+  <body>
+    <h1>SNCFT Admin Dashboard MVP (Scaffold)</h1>
+    <p>Workflow: CSV → Preview → Save Draft → Publish / Rollback</p>
+
+    <label for="csv">Schedule CSV</label>
+    <textarea id="csv" placeholder="Paste schedule CSV here..."></textarea>
+
+    <div class="row">
+      <button id="previewBtn">Preview</button>
+      <button id="saveBtn">Save Draft</button>
+      <input id="importId" placeholder="Import ID for publish/rollback" />
+      <button id="publishBtn">Publish</button>
+      <button id="rollbackBtn">Rollback</button>
+    </div>
+
+    <h2>Response</h2>
+    <pre id="result">{}</pre>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
