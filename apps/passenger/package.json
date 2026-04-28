@@ -2,6 +2,7 @@
   "name": "@sncft/passenger",
   "version": "0.2.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "node server.mjs",
     "build": "echo 'Static passenger app - no build step'",

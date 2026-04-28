@@ -2,6 +2,7 @@
   "name": "@sncft/admin",
   "version": "0.2.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "node server.mjs",
     "build": "echo 'Static admin app - no build step'",

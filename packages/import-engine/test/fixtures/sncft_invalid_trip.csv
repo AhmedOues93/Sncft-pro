@@ -1,0 +1,2 @@
+line,line_name,season,valid_from,valid_to,direction,train_number,service_code,station_order,station,arrival_time,departure_time,time
+A,Ligne A,SUMMER,2026-09-30,2026-06-01,outbound,ERR1,WKD,0,Tunis Ville,xx:yy,,
