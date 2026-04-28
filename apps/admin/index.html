@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SNCFT Admin Imports</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 24px; background: #f3f6fb; }
+      .card { background: #fff; border-radius: 16px; padding: 16px; margin-bottom: 16px; }
+      textarea { width: 100%; min-height: 160px; }
+      button { margin-right: 8px; padding: 8px 14px; }
+      pre { background: #0f172a; color: #d1d5db; padding: 12px; border-radius: 8px; overflow: auto; }
+    </style>
+  </head>
+  <body>
+    <h1>SNCFT Admin Dashboard (MVP)</h1>
+    <div class="card">
+      <label>API Base URL <input id="api" value="http://localhost:3000" size="40" /></label>
+    </div>
+    <div class="card">
+      <h2>CSV Horaires</h2>
+      <textarea id="schedules" placeholder="Collez le CSV horaires"></textarea>
+      <div>
+        <button onclick="previewSchedules()">Prévisualiser</button>
+        <button onclick="saveSchedules()">Enregistrer brouillon</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>CSV Tarifs</h2>
+      <textarea id="fares" placeholder="Collez le CSV tarifs"></textarea>
+      <div>
+        <button onclick="previewFares()">Prévisualiser</button>
+        <button onclick="saveFares()">Enregistrer brouillon</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Résultat</h2>
+      <pre id="out">Aucune action.</pre>
+    </div>
+
+    <script>
+      let latestScheduleDraft = null;
+      let latestFareDraft = null;
+      const apiBase = () => document.getElementById('api').value;
+      const out = (value) => document.getElementById('out').textContent = JSON.stringify(value, null, 2);
+      const body = (id) => ({ csv: document.getElementById(id).value });
+
+      async function call(path, method, payload) {
+        const response = await fetch(`${apiBase()}${path}`, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: payload ? JSON.stringify(payload) : undefined,
+        });
+        const json = await response.json();
+        if (!response.ok) throw new Error(JSON.stringify(json));
+        return json;
+      }
+
+      async function previewSchedules() { out(await call('/admin/imports/schedules/preview', 'POST', body('schedules'))); }
+      async function saveSchedules() { const r = await call('/admin/imports/schedules', 'POST', body('schedules')); latestScheduleDraft = r.id; out(r); }
+      async function previewFares() { out(await call('/admin/imports/fares/preview', 'POST', body('fares'))); }
+      async function saveFares() { const r = await call('/admin/imports/fares', 'POST', body('fares')); latestFareDraft = r.id; out(r); }
+    </script>
+  </body>
+</html>
