@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SNCFT Passenger MVP</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 2rem; max-width: 980px; }
+      .row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.75rem 0; }
+      input, button { padding: 0.45rem 0.6rem; }
+      .card { border: 1px solid #ddd; padding: 0.75rem; margin-bottom: 0.5rem; border-radius: 6px; }
+    </style>
+  </head>
+  <body>
+    <h1>SNCFT Passenger MVP (Scaffold)</h1>
+    <div class="row">
+      <input id="origin" placeholder="originStationId" value="st_tunis" />
+      <input id="destination" placeholder="destinationStationId" value="st_erriadh" />
+      <input id="datetime" type="datetime-local" />
+      <input id="passengers" type="number" min="1" value="1" />
+    </div>
+    <div class="row">
+      <button id="earlier">Plus tôt</button>
+      <button id="now">Maintenant</button>
+      <button id="later">Plus tard</button>
+      <button id="search">Search</button>
+    </div>
+    <div id="results"></div>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

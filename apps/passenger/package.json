@@ -1,7 +1,8 @@
 {
   "name": "@sncft/passenger",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "echo 'Use Flutter app in apps/passenger/flutter_app'",
     "build": "echo 'Flutter build handled in flutter_app'",
