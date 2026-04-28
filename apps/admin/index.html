@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SNCFT Admin</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="container">
+    <header class="hero card">
+      <div class="hero-main">
+        <img class="brand-logo" src="./assets/sncft-logo.png" alt="SNCFT" onerror="this.style.display='none'" />
+        <p class="eyebrow">SNCFT Navigator</p>
+        <h1>Tableau de bord Administration</h1>
+        <p class="muted">Workflow complet: prévisualiser, valider, publier et rollback des imports horaires/tarifs.</p>
+      </div>
+      <div class="hero-panel">
+        <label class="label">API Base URL <input id="apiBaseUrl" /></label>
+        <label class="label">Auth Token <input id="authToken" placeholder="Bearer token" /></label>
+        <div class="row actions-row">
+          <button id="saveApiConfig">Enregistrer</button>
+          <button id="refreshActive" class="secondary">Active Versions</button>
+          <button id="refreshHistory" class="secondary">Historique</button>
+        </div>
+      </div>
+    </header>
+
+    <section class="card">
+      <div class="section-title">
+        <h2>Comptes admin</h2>
+        <span class="chip">Rôles & statuts</span>
+      </div>
+      <div class="row grid-3">
+        <input id="registerEmployeeNumber" placeholder="Numéro employé" />
+        <input id="registerFirstName" placeholder="Prénom" />
+        <input id="registerLastName" placeholder="Nom" />
+      </div>
+      <div class="row grid-3">
+        <input id="registerEmail" placeholder="Email" />
+        <input id="registerPassword" type="password" placeholder="Mot de passe" />
+        <button id="registerAdmin">Créer un compte admin</button>
+      </div>
+      <div class="row grid-4">
+        <input id="loginEmail" placeholder="Email" />
+        <input id="loginPassword" type="password" placeholder="Mot de passe" />
+        <button id="loginAdmin">Se connecter</button>
+        <button id="logoutAdmin" class="secondary">Se déconnecter</button>
+      </div>
+      <p id="adminIdentity" class="state">Non connecté</p>
+      <pre id="activeOutput"></pre>
+    </section>
+
+    <section class="card split-card">
+      <div>
+        <div class="section-title">
+          <h2>Schedules CSV</h2>
+          <span class="chip chip-soft">Horaires</span>
+        </div>
+        <input id="scheduleFile" type="file" accept=".csv" />
+        <textarea id="scheduleCsv" rows="8" placeholder="Collez le CSV schedules"></textarea>
+        <div class="row actions-row">
+          <button id="previewSchedule" class="secondary">Preview</button>
+          <button id="saveSchedule">Save Draft</button>
+          <button id="publishSchedule">Publish Latest</button>
+          <button id="rollbackSchedule" class="danger">Rollback Latest</button>
+        </div>
+        <pre id="scheduleOutput"></pre>
+      </div>
+      <div>
+        <div class="section-title">
+          <h2>Fares CSV</h2>
+          <span class="chip chip-soft">Tarifs</span>
+        </div>
+        <input id="fareFile" type="file" accept=".csv" />
+        <textarea id="fareCsv" rows="8" placeholder="Collez le CSV fares"></textarea>
+        <div class="row actions-row">
+          <button id="previewFare" class="secondary">Preview</button>
+          <button id="saveFare">Save Draft</button>
+          <button id="publishFare">Publish Latest</button>
+          <button id="rollbackFare" class="danger">Rollback Latest</button>
+        </div>
+        <pre id="fareOutput"></pre>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <h2>Import History</h2>
+        <span class="chip">JSON</span>
+      </div>
+      <pre id="historyOutput"></pre>
+    </section>
+  </main>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
