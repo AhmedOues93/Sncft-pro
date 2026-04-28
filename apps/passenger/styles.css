@@ -1,0 +1,13 @@
+body { font-family: Arial, sans-serif; background: #f3f5f8; margin: 0; }
+.container { max-width: 960px; margin: 1rem auto; padding: 0 1rem 2rem; }
+.card { background: white; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+.row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin: 0.5rem 0; }
+.field { flex: 1; min-width: 220px; position: relative; }
+input, button { padding: 0.5rem; }
+.suggestions { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ccc; list-style: none; margin: 0; padding: 0; z-index: 2; }
+.suggestions li { padding: 0.4rem; cursor: pointer; }
+.suggestions li:hover { background: #eef4ff; }
+.journey { border: 1px solid #ddd; border-radius: 6px; padding: 0.75rem; margin-bottom: 0.6rem; }
+.state { color: #555; }
+.error { color: #b00020; }
+.empty { color: #666; }

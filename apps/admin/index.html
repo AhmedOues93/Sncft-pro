@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SNCFT Admin</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>SNCFT Admin Workflow</h1>
+    <section class="card">
+      <label>API Base URL <input id="apiBaseUrl" /></label>
+      <label>Auth Token <input id="authToken" placeholder="Bearer token" /></label>
+      <button id="saveApiConfig">Enregistrer</button>
+      <button id="refreshActive">Charger Active Versions</button>
+      <button id="refreshHistory">Charger Historique</button>
+      <pre id="activeOutput"></pre>
+    </section>
+
+    <section class="card">
+      <h2>Schedules CSV</h2>
+      <input id="scheduleFile" type="file" accept=".csv" />
+      <textarea id="scheduleCsv" rows="8" placeholder="Collez le CSV schedules"></textarea>
+      <div class="row">
+        <button id="previewSchedule">Preview</button>
+        <button id="saveSchedule">Save Draft</button>
+        <button id="publishSchedule">Publish Latest</button>
+        <button id="rollbackSchedule">Rollback Latest</button>
+      </div>
+      <pre id="scheduleOutput"></pre>
+    </section>
+
+    <section class="card">
+      <h2>Fares CSV</h2>
+      <input id="fareFile" type="file" accept=".csv" />
+      <textarea id="fareCsv" rows="8" placeholder="Collez le CSV fares"></textarea>
+      <div class="row">
+        <button id="previewFare">Preview</button>
+        <button id="saveFare">Save Draft</button>
+        <button id="publishFare">Publish Latest</button>
+        <button id="rollbackFare">Rollback Latest</button>
+      </div>
+      <pre id="fareOutput"></pre>
+    </section>
+
+    <section class="card">
+      <h2>Import History</h2>
+      <pre id="historyOutput"></pre>
+    </section>
+  </main>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
