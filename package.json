@@ -16,7 +16,14 @@
     "build": "npm run build --workspaces --if-present",
     "check": "npm run check --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "import:all": "npm run import:all -w @sncft/api"
+    "import:all": "npm run import:all -w @sncft/api",
+    "local:api": "ADMIN_AUTH_REQUIRED=false STORAGE_DRIVER=memory SNCFT_DEV_ADMIN_ROLE=superadmin npm run dev -w @sncft/api",
+    "local:admin": "npm run dev -w @sncft/admin --if-present",
+    "local:passenger": "npm run dev -w @sncft/passenger --if-present",
+    "local:import": "ADMIN_TOKEN=dev-token CSV_DIR=${CSV_DIR:-$HOME/Desktop/csv} API_BASE_URL=http://127.0.0.1:3000 npm run import:all -w @sncft/api",
+    "local:test": "npm run test -w @sncft/api && npm run test -w @sncft/import-engine && npm run check",
+    "supabase:api": "ADMIN_AUTH_REQUIRED=true STORAGE_DRIVER=supabase SNCFT_DEV_ADMIN_ROLE=superadmin npm run dev -w @sncft/api",
+    "supabase:import": "ADMIN_TOKEN=${ADMIN_TOKEN:-dev-token} CSV_DIR=${CSV_DIR:-$HOME/Desktop/csv} API_BASE_URL=http://127.0.0.1:3000 npm run import:all -w @sncft/api"
   },
   "engines": {
     "node": ">=20.0.0"

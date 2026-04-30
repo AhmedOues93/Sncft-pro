@@ -1,310 +1,458 @@
-const storageKey = 'sncft_passenger_api_base';
-const passengerTokenKey = 'sncft_passenger_auth_token';
-let state = {
-  apiBaseUrl: localStorage.getItem(storageKey) || 'http://localhost:3000',
-  authToken: localStorage.getItem(passengerTokenKey) || '',
-  origin: null,
-  destination: null,
-  pagination: { offset: 0, limit: 5, hasNext: false, hasPrevious: false, nextOffset: null, previousOffset: 0 },
+const API_BASE = localStorage.getItem('sncft_api_base') || 'http://127.0.0.1:3000';
+
+const state = {
+  origin: { id: 'tunis ville', name: 'Tunis Ville' },
+  destination: { id: 'hammam lif', name: 'Hammam Lif' },
+  offset: 0,
+  limit: 5,
   lastQuery: null,
-  results: [],
+  lastResponse: null,
+  selectedJourney: null,
+  sliderIndex: 0,
 };
 
-const el = {
-  apiBaseUrl: document.getElementById('apiBaseUrl'),
-  saveApiConfig: document.getElementById('saveApiConfig'),
-  registerName: document.getElementById('registerName'),
-  registerEmail: document.getElementById('registerEmail'),
-  registerPassword: document.getElementById('registerPassword'),
-  registerBtn: document.getElementById('registerBtn'),
-  loginEmail: document.getElementById('loginEmail'),
-  loginPassword: document.getElementById('loginPassword'),
-  loginBtn: document.getElementById('loginBtn'),
-  logoutBtn: document.getElementById('logoutBtn'),
-  authState: document.getElementById('authState'),
-  originInput: document.getElementById('originInput'),
-  destinationInput: document.getElementById('destinationInput'),
-  originSuggestions: document.getElementById('originSuggestions'),
-  destinationSuggestions: document.getElementById('destinationSuggestions'),
-  dateInput: document.getElementById('dateInput'),
-  timeInput: document.getElementById('timeInput'),
-  passengersInput: document.getElementById('passengersInput'),
-  searchBtn: document.getElementById('searchBtn'),
-  saveFavoriteBtn: document.getElementById('saveFavoriteBtn'),
-  searchState: document.getElementById('searchState'),
-  results: document.getElementById('results'),
-  details: document.getElementById('details'),
-  prevBtn: document.getElementById('prevBtn'),
-  nextBtn: document.getElementById('nextBtn'),
-};
-
-el.apiBaseUrl.value = state.apiBaseUrl;
-
-function setStateMessage(msg, error = false) {
-  el.searchState.textContent = msg;
-  el.searchState.className = error ? 'state error' : 'state';
+function $(id) {
+  return document.getElementById(id);
 }
 
-function getDateTimeIso() {
-  const date = el.dateInput.value || new Date().toISOString().slice(0, 10);
-  const time = el.timeInput.value || '05:00';
+function qs(selector, root = document) {
+  return root.querySelector(selector);
+}
+
+function qsa(selector, root = document) {
+  return [...root.querySelectorAll(selector)];
+}
+
+function setText(id, value) {
+  const el = $(id);
+  if (el) el.textContent = value;
+}
+
+function todayString() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function ensureDefaults() {
+  if ($('originInput') && !$('originInput').value) $('originInput').value = 'Tunis Ville';
+  if ($('destinationInput') && !$('destinationInput').value) $('destinationInput').value = 'Hammam Lif';
+  if ($('dateInput') && !$('dateInput').value) $('dateInput').value = todayString();
+  if ($('timeInput') && !$('timeInput').value) $('timeInput').value = '05:00';
+  if ($('passengersInput') && !$('passengersInput').value) $('passengersInput').value = '1';
+}
+
+async function api(path, options = {}) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    ...options,
+  });
+
+  const text = await res.text();
+  let data = null;
+
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = { error: text };
+  }
+
+  if (!res.ok) {
+    throw new Error(data?.error || `Erreur API ${res.status}`);
+  }
+
+  return data;
+}
+
+function normalizeInputStation(value) {
+  const raw = String(value || '').trim();
+  const key = raw.toLowerCase();
+
+  const aliases = {
+    tunis: 'Tunis',
+    'tunis ville': 'Tunis Ville',
+    hammam: 'Hammam Lif',
+    'hammam lif': 'Hammam Lif',
+    erriadh: 'Erriadh',
+    riadh: 'Erriadh',
+    mellassine: 'Mellassine',
+    bougatfa: 'Bougatfa',
+    goubaa: 'Goubaa',
+    gobaa: 'Goubaa',
+    ezzahra: 'LYCEE EZZAHRA',
+    'ez zahra': 'EZ-ZAHRA',
+  };
+
+  return aliases[key] || raw;
+}
+
+function debounce(fn, delay = 220) {
+  let timer = null;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  };
+}
+
+async function fetchSuggestions(kind) {
+  const input = kind === 'origin' ? $('originInput') : $('destinationInput');
+  const box = kind === 'origin' ? $('originSuggestions') : $('destinationSuggestions');
+  if (!input || !box) return;
+
+  const q = input.value.trim();
+  if (q.length < 2) {
+    box.innerHTML = '';
+    return;
+  }
+
+  try {
+    const data = await api(`/stations/search?q=${encodeURIComponent(q)}&limit=10`);
+    const items = data.items || [];
+
+    box.innerHTML = items.map((item) => `
+      <button type="button" data-id="${escapeHtml(item.id)}" data-name="${escapeHtml(item.name)}">
+        ${escapeHtml(item.name)}
+      </button>
+    `).join('');
+
+    qsa('button', box).forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const selected = { id: btn.dataset.id, name: btn.dataset.name };
+        if (kind === 'origin') state.origin = selected;
+        if (kind === 'destination') state.destination = selected;
+        input.value = selected.name;
+        box.innerHTML = '';
+      });
+    });
+  } catch (error) {
+    box.innerHTML = `<button type="button">Erreur stations</button>`;
+  }
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
+}
+
+function getDatetime() {
+  ensureDefaults();
+  const date = $('dateInput')?.value || todayString();
+  const time = $('timeInput')?.value || '05:00';
   return `${date}T${time}:00`;
 }
 
-async function fetchJson(path, options = {}) {
-  const headers = { ...(state.authToken ? { authorization: `Bearer ${state.authToken}` } : {}), ...(options.headers || {}) };
-  const response = await fetch(`${state.apiBaseUrl}${path}`, { ...options, headers });
-  if (!response.ok) {
-    throw new Error(await response.text());
-  }
-  return response.json();
+function collectSearch(offset = 0) {
+  const originValue = $('originInput')?.value || state.origin.name;
+  const destinationValue = $('destinationInput')?.value || state.destination.name;
+
+  return {
+    originStationId: state.origin?.id || normalizeInputStation(originValue),
+    destinationStationId: state.destination?.id || normalizeInputStation(destinationValue),
+    datetime: getDatetime(),
+    passengers: Math.max(1, Number($('passengersInput')?.value || 1)),
+    offset,
+    limit: 5,
+  };
 }
 
-
-async function refreshPassengerMe() {
-  if (!state.authToken) {
-    el.authState.textContent = 'Non connecté — Connectez-vous pour sauvegarder';
-    return;
-  }
-  try {
-    const me = await fetchJson('/auth/me');
-    el.authState.textContent = `Connecté: ${me.displayName || me.email}`;
-  } catch (error) {
-    el.authState.textContent = `Erreur auth: ${error.message}`;
-  }
+function formatFare(fare) {
+  if (!fare) return 'Tarif indisponible';
+  const amount = Number(fare.amount || 0);
+  if (!Number.isFinite(amount) || amount <= 0) return 'Tarif indisponible';
+  const passengers = Number(fare.passengerCount || 1);
+  const suffix = passengers > 1 ? ` · ${passengers} voyageurs` : '';
+  return `${amount.toFixed(3)} ${fare.currency || 'TND'}${suffix}`;
 }
 
-async function registerPassenger() {
+function fareBreakdown(fare) {
+  const parts = fare?.breakdown || [];
+  if (!parts.length || parts.length < 2) return '';
+  return parts.map((p) => `Ligne ${p.lineCode}: ${Number(p.amount || 0).toFixed(3)} TND`).join(' + ');
+}
+
+function journeyTypeLabel(journey) {
+  return journey.type === 'transfer' ? 'Correspondance' : 'Direct';
+}
+
+function trainNumbers(journey) {
+  return (journey.segments || []).map((s) => `Train ${s.trainNumber}`).join(' · ');
+}
+
+function segmentRoute(segment) {
+  return `${displayStation(segment.originStationId)} → ${displayStation(segment.destinationStationId)}`;
+}
+
+function displayStation(value) {
+  if (!value) return '';
+  return String(value)
+    .split(' ')
+    .map((word) => word.length ? word[0].toUpperCase() + word.slice(1) : word)
+    .join(' ');
+}
+
+async function searchJourneys(offset = 0) {
+  const list = $('journeyList');
+  if (!list) return;
+
+  $('timeNav')?.classList.remove('hidden');
+  showResultsList();
+
+  list.innerHTML = `
+    <article class="empty-state">
+      <h3>Recherche en cours…</h3>
+      <p>Chargement des trains disponibles.</p>
+    </article>
+  `;
+
+  const query = collectSearch(offset);
+  state.offset = offset;
+  state.lastQuery = query;
+
   try {
-    await fetchJson('/auth/register', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: '' },
-      body: JSON.stringify({ displayName: el.registerName.value.trim(), email: el.registerEmail.value.trim(), password: el.registerPassword.value }),
+    const params = new URLSearchParams({
+      originStationId: query.originStationId,
+      destinationStationId: query.destinationStationId,
+      datetime: query.datetime,
+      passengers: String(query.passengers),
+      offset: String(query.offset),
+      limit: '5',
     });
-    el.authState.textContent = 'Compte créé. Connectez-vous.';
+
+    const data = await api(`/journeys/search?${params.toString()}`);
+    state.lastResponse = data;
+    renderJourneys(data);
   } catch (error) {
-    el.authState.textContent = `Erreur inscription: ${error.message}`;
+    list.innerHTML = `
+      <article class="empty-state">
+        <h3>Erreur de recherche</h3>
+        <p class="error">${escapeHtml(error.message)}</p>
+      </article>
+    `;
+    setText('resultMeta', 'Erreur API');
   }
 }
 
-async function loginPassenger() {
-  try {
-    const data = await fetchJson('/auth/login', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: '' },
-      body: JSON.stringify({ email: el.loginEmail.value.trim(), password: el.loginPassword.value }),
-    });
-    state.authToken = data.accessToken;
-    localStorage.setItem(passengerTokenKey, state.authToken);
-    await refreshPassengerMe();
-  } catch (error) {
-    el.authState.textContent = `Erreur login: ${error.message}`;
-  }
-}
+function renderJourneys(data) {
+  const list = $('journeyList');
+  if (!list) return;
 
-async function logoutPassenger() {
-  try {
-    if (state.authToken) await fetchJson('/auth/logout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
-  } catch {}
-  state.authToken = '';
-  localStorage.removeItem(passengerTokenKey);
-  await refreshPassengerMe();
-}
+  const items = data.items || [];
+  const total = Number(data.total || items.length || 0);
 
-async function saveFavorite() {
-  if (!state.authToken) {
-    el.authState.textContent = 'Connectez-vous pour sauvegarder';
-    return;
-  }
-  if (!state.origin || !state.destination) {
-    setStateMessage('Sélectionnez départ/destination avant sauvegarde.', true);
-    return;
-  }
-  try {
-    await fetchJson('/me/favorites', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ originStationId: state.origin.id, destinationStationId: state.destination.id, label: `${state.origin.name} → ${state.destination.name}` }),
-    });
-    setStateMessage('Favori sauvegardé.');
-  } catch (error) {
-    setStateMessage(`Erreur favori: ${error.message}`, true);
-  }
-}
+  setText('resultMeta', `${items.length} / ${total} train(s)`);
 
-async function saveJourneyForLater(journey) {
-  if (!state.authToken) {
-    el.authState.textContent = 'Connectez-vous pour sauvegarder';
-    return;
-  }
-
-  const trainNumbers = journey.segments.map((segment) => segment.trainNumber);
-  const date = el.dateInput.value || new Date().toISOString().slice(0, 10);
-
-  try {
-    await fetchJson('/me/saved-journeys', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        originStationId: state.origin.id,
-        destinationStationId: state.destination.id,
-        departureTime: journey.departureTime,
-        arrivalTime: journey.arrivalTime,
-        trainNumbers,
-        journeyPayload: journey,
-        travelDate: date,
-      }),
-    });
-    setStateMessage('Trajet sauvegardé pour plus tard.');
-  } catch (error) {
-    setStateMessage(`Erreur sauvegarde trajet: ${error.message}`, true);
-  }
-}
-
-async function loadSuggestions(query, target) {
-  if (!query || query.length < 2) {
-    target.innerHTML = '';
+  if (!items.length) {
+    list.innerHTML = `
+      <article class="empty-state">
+        <h3>Aucun train trouvé</h3>
+        <p>Essayez une autre heure ou une autre station.</p>
+      </article>
+    `;
     return;
   }
 
-  try {
-    const data = await fetchJson(`/stations/search?q=${encodeURIComponent(query)}&limit=10`);
-    target.innerHTML = '';
-    data.items.forEach((item) => {
-      const li = document.createElement('li');
-      li.textContent = item.name;
-      li.onclick = () => {
-        if (target === el.originSuggestions) {
-          state.origin = item;
-          el.originInput.value = item.name;
-        } else {
-          state.destination = item;
-          el.destinationInput.value = item.name;
-        }
-        target.innerHTML = '';
-      };
-      target.appendChild(li);
-    });
-  } catch {
-    target.innerHTML = '<li>Erreur suggestions</li>';
-  }
-}
+  list.innerHTML = items.map((journey, index) => {
+    const first = journey.segments?.[0];
+    const last = journey.segments?.[journey.segments.length - 1];
+    const breakdown = fareBreakdown(journey.fare);
 
-function formatJourney(journey, idx) {
-  const segments = journey.segments.map((seg) => `${seg.lineCode} #${seg.trainNumber}`).join(' → ');
-  return `<div class="journey">
-    <div><strong>${journey.type === 'direct' ? 'Direct' : 'Correspondance'}</strong> - ${journey.departureTime} → ${journey.arrivalTime} (${journey.durationMinutes} min)</div>
-    <div>${segments}</div>
-    <div>Tarif: ${journey.fare.amount} ${journey.fare.currency}</div>
-    ${journey.transferStationId ? `<div>Correspondance: ${journey.transferStationId} (${journey.transferWaitMinutes} min)</div>` : ''}
-    <button data-index="${idx}" class="detailsBtn">Voir détails</button>
-    <button data-save="${idx}" class="saveJourneyBtn">Sauvegarder</button>
-  </div>`;
-}
+    return `
+      <article class="journey-card">
+        <div class="journey-top">
+          <span class="badge ${journey.type === 'transfer' ? 'transfer' : ''}">${journeyTypeLabel(journey)}</span>
+          <span class="train-number">${escapeHtml(trainNumbers(journey))}</span>
+        </div>
 
-function buildDetails(journey) {
-  const stops = [];
-  journey.segments.forEach((segment, segmentIndex) => {
-    segment.stops.forEach((stop, idx) => {
-      if (segmentIndex > 0 && idx === 0 && stops.length && stops[stops.length - 1].stationId === stop.stationId) return;
-      stops.push(stop);
-    });
+        <div class="journey-main">
+          <div class="journey-point">
+            <div class="journey-time">${escapeHtml(journey.departureTime)}</div>
+            <div class="journey-station">${escapeHtml(displayStation(first?.originStationId))}</div>
+          </div>
+
+          <div class="route-mid">
+            <div class="rail-line"></div>
+            <span class="duration-pill">${Number(journey.durationMinutes || 0)} min</span>
+          </div>
+
+          <div class="journey-point">
+            <div class="journey-time">${escapeHtml(journey.arrivalTime)}</div>
+            <div class="journey-station">${escapeHtml(displayStation(last?.destinationStationId))}</div>
+          </div>
+        </div>
+
+        <div class="journey-meta">
+          <span class="fare-chip">${escapeHtml(formatFare(journey.fare))}</span>
+          ${journey.type === 'transfer' ? `<span class="duration-pill">Changement: ${escapeHtml(displayStation(journey.transferStationId))}</span>` : ''}
+          ${breakdown ? `<span class="fare-detail">${escapeHtml(breakdown)}</span>` : ''}
+        </div>
+
+        <div class="journey-actions">
+          <button class="details-btn" type="button" data-details="${index}">Voir le train</button>
+          <button class="save-btn" type="button" data-save="${index}">Favori</button>
+        </div>
+      </article>
+    `;
+  }).join('');
+
+  qsa('[data-details]', list).forEach((btn) => {
+    btn.addEventListener('click', () => renderDetails(items[Number(btn.dataset.details)]));
   });
 
-  const lines = stops.map((s) => `<li>${s.stationName} - ${s.arrivalTime}/${s.departureTime}</li>`).join('');
-  return `<div>
-    <div><strong>${journey.departureTime} → ${journey.arrivalTime}</strong> (${journey.durationMinutes} min)</div>
-    ${journey.transferStationId ? `<div>Correspondance à ${journey.transferStationId} (${journey.transferWaitMinutes} min)</div>` : ''}
-    <div>Tarif total (${journey.fare.passengerCount} passagers): ${journey.fare.amount} ${journey.fare.currency}</div>
-    <ul>${lines}</ul>
-  </div>`;
-}
-
-function renderResults() {
-  if (!state.results.length) {
-    el.results.innerHTML = '<p class="empty">Aucun trajet trouvé.</p>';
-    return;
-  }
-  el.results.innerHTML = state.results.map(formatJourney).join('');
-  document.querySelectorAll('.detailsBtn').forEach((btn) => {
+  qsa('[data-save]', list).forEach((btn) => {
     btn.addEventListener('click', () => {
-      const idx = Number(btn.getAttribute('data-index'));
-      el.details.innerHTML = buildDetails(state.results[idx]);
-    });
-  });
-  document.querySelectorAll('.saveJourneyBtn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const idx = Number(btn.getAttribute('data-save'));
-      saveJourneyForLater(state.results[idx]);
+      btn.textContent = 'Ajouté';
+      btn.disabled = true;
     });
   });
 }
 
-async function search(offset = 0) {
-  if (!state.origin || !state.destination) {
-    setStateMessage('Veuillez sélectionner départ et destination.', true);
-    return;
-  }
+function renderDetails(journey) {
+  if (!journey) return;
+  state.selectedJourney = journey;
 
-  const passengers = Math.max(1, Number(el.passengersInput.value || 1));
-  const datetime = getDateTimeIso();
+  qs('.details-card')?.classList.add('open-details');
+  qs('.journey-list')?.classList.add('hide-on-details');
+  qs('.pagination')?.classList.add('hide-on-details');
+  qs('.results-head')?.classList.add('hide-on-details');
 
-  setStateMessage('Chargement...');
+  setText('detailsTitle', `${journeyTypeLabel(journey)} · ${journey.departureTime} → ${journey.arrivalTime}`);
 
-  const query = new URLSearchParams({
-    originStationId: state.origin.id,
-    destinationStationId: state.destination.id,
-    datetime,
-    passengers: String(passengers),
-    offset: String(offset),
-    limit: '5',
-  });
+  const body = $('detailsBody');
+  if (!body) return;
 
-  try {
-    const data = await fetchJson(`/journeys/search?${query}`);
-    state.lastQuery = { passengers, datetime };
-    state.pagination = {
-      offset: data.offset,
-      limit: data.limit,
-      hasNext: data.hasNext,
-      hasPrevious: data.hasPrevious,
-      nextOffset: data.nextOffset,
-      previousOffset: data.previousOffset,
-    };
-    state.results = data.items;
-    setStateMessage(`Résultats: ${data.count}/${data.total}`);
-    renderResults();
-  } catch (error) {
-    setStateMessage(`Erreur API: ${error.message}`, true);
-    el.results.innerHTML = '<p class="error">Erreur lors de la recherche.</p>';
-  }
+  const breakdown = fareBreakdown(journey.fare);
+
+  body.innerHTML = `
+    <button class="back-results-btn" type="button" id="backResultsBtn">← Retour aux trains</button>
+
+    <div class="journey-meta">
+      <span class="fare-chip">${escapeHtml(formatFare(journey.fare))}</span>
+      ${breakdown ? `<span class="fare-detail">${escapeHtml(breakdown)}</span>` : ''}
+    </div>
+
+    ${(journey.segments || []).map((segment) => `
+      <section class="segment-card">
+        <div class="journey-top">
+          <span class="badge">Ligne ${escapeHtml(segment.lineCode)}</span>
+          <span class="train-number">Train ${escapeHtml(segment.trainNumber)}</span>
+        </div>
+        <strong>${escapeHtml(segmentRoute(segment))}</strong>
+
+        ${(segment.stops || []).map((stop) => `
+          <div class="stop-row">
+            <div class="stop-time">${escapeHtml(stop.departureTime || stop.arrivalTime)}</div>
+            <div class="stop-name">${escapeHtml(stop.stationName || displayStation(stop.stationId))}</div>
+          </div>
+        `).join('')}
+      </section>
+    `).join('')}
+  `;
+
+  $('backResultsBtn')?.addEventListener('click', showResultsList);
 }
 
-el.saveApiConfig.onclick = () => {
-  state.apiBaseUrl = el.apiBaseUrl.value.trim() || 'http://localhost:3000';
-  localStorage.setItem(storageKey, state.apiBaseUrl);
-  setStateMessage(`API: ${state.apiBaseUrl}`);
-};
+function showResultsList() {
+  qs('.details-card')?.classList.remove('open-details');
+  qs('.journey-list')?.classList.remove('hide-on-details');
+  qs('.pagination')?.classList.remove('hide-on-details');
+  qs('.results-head')?.classList.remove('hide-on-details');
+}
 
-el.originInput.addEventListener('input', () => {
-  state.origin = null;
-  loadSuggestions(el.originInput.value, el.originSuggestions);
-});
-el.destinationInput.addEventListener('input', () => {
-  state.destination = null;
-  loadSuggestions(el.destinationInput.value, el.destinationSuggestions);
-});
+function adjustTime(minutes) {
+  ensureDefaults();
+  const input = $('timeInput');
+  if (!input) return;
 
-el.searchBtn.onclick = () => search(0);
-el.saveFavoriteBtn.onclick = saveFavorite;
-el.registerBtn.onclick = registerPassenger;
-el.loginBtn.onclick = loginPassenger;
-el.logoutBtn.onclick = logoutPassenger;
-el.prevBtn.onclick = () => {
-  if (state.pagination.hasPrevious) search(state.pagination.previousOffset);
-};
-el.nextBtn.onclick = () => {
-  if (state.pagination.hasNext && state.pagination.nextOffset !== null) search(state.pagination.nextOffset);
-};
+  const [h, m] = input.value.split(':').map(Number);
+  const total = Math.max(0, Math.min(23 * 60 + 59, h * 60 + m + minutes));
+  const hh = String(Math.floor(total / 60)).padStart(2, '0');
+  const mm = String(total % 60).padStart(2, '0');
+  input.value = `${hh}:${mm}`;
+  searchJourneys(0);
+}
 
-refreshPassengerMe();
+function bindEvents() {
+  $('originInput')?.addEventListener('input', debounce(() => {
+    state.origin = { id: '', name: $('originInput').value };
+    fetchSuggestions('origin');
+  }));
+
+  $('destinationInput')?.addEventListener('input', debounce(() => {
+    state.destination = { id: '', name: $('destinationInput').value };
+    fetchSuggestions('destination');
+  }));
+
+  $('swapBtn')?.addEventListener('click', () => {
+    const originInput = $('originInput');
+    const destinationInput = $('destinationInput');
+    if (!originInput || !destinationInput) return;
+
+    const previousOrigin = { ...state.origin };
+    state.origin = { ...state.destination };
+    state.destination = previousOrigin;
+
+    const oldValue = originInput.value;
+    originInput.value = destinationInput.value;
+    destinationInput.value = oldValue;
+  });
+
+  $('searchBtn')?.addEventListener('click', () => searchJourneys(0));
+
+  $('earlierBtn')?.addEventListener('click', () => adjustTime(-30));
+  $('laterBtn')?.addEventListener('click', () => adjustTime(30));
+  $('resetBtn')?.addEventListener('click', () => {
+    $('dateInput').value = todayString();
+    const now = new Date();
+    $('timeInput').value = `${String(now.getHours()).padStart(2, '0')}:${String(Math.floor(now.getMinutes() / 5) * 5).padStart(2, '0')}`;
+    searchJourneys(0);
+  });
+
+  $('previousPageBtn')?.addEventListener('click', () => {
+    searchJourneys(Math.max(0, state.offset - 5));
+  });
+
+  $('nextPageBtn')?.addEventListener('click', () => {
+    searchJourneys(state.offset + 5);
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!event.target.closest('.station-row')) {
+      if ($('originSuggestions')) $('originSuggestions').innerHTML = '';
+      if ($('destinationSuggestions')) $('destinationSuggestions').innerHTML = '';
+    }
+  });
+}
+
+function initSlider() {
+  const slides = qsa('.hero-slide');
+  const dots = qsa('.hero-dot');
+  if (!slides.length) return;
+
+  setInterval(() => {
+    state.sliderIndex = (state.sliderIndex + 1) % slides.length;
+    slides.forEach((slide, index) => slide.classList.toggle('active', index === state.sliderIndex));
+    dots.forEach((dot, index) => dot.classList.toggle('active', index === state.sliderIndex));
+  }, 3500);
+
+  dots.forEach((dot, index) => {
+    dot.addEventListener('click', () => {
+      state.sliderIndex = index;
+      slides.forEach((slide, i) => slide.classList.toggle('active', i === index));
+      dots.forEach((d, i) => d.classList.toggle('active', i === index));
+    });
+  });
+}
+
+function init() {
+  ensureDefaults();
+  bindEvents();
+  initSlider();
+  setText('apiStatus', 'API connectée');
+}
+
+window.addEventListener('DOMContentLoaded', init);
