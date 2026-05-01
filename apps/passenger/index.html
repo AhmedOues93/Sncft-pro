@@ -7,139 +7,185 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <main class="app-shell">
-    <section class="hero-slider" aria-label="SNCFT Navigator">
-      <div class="hero-slide hero-slide-1 active"></div>
-      <div class="hero-slide hero-slide-2"></div>
-      <div class="hero-slide hero-slide-3"></div>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <img src="./assets/logo-sncft.svg" alt="SNCFT Navigator" />
+      </div>
+      <button id="openAccount" class="account-chip" type="button">Compte</button>
+    </header>
+
+    <section class="hero" aria-label="Voyager en train">
+      <div class="hero-slide active"></div>
+      <div class="hero-slide"></div>
+      <div class="hero-slide"></div>
       <div class="hero-overlay"></div>
-
-      <header class="hero-top">
-        <div class="brand-block">
-          <img class="sncft-logo" src="./assets/sncft-logo.png" alt="SNCFT" />
-          <div>
-            <strong>SNCFT Navigator</strong>
-            <span>Banlieue de Tunis</span>
-          </div>
-        </div>
-        <span class="api-status" id="apiStatus">API locale</span>
-      </header>
-
       <div class="hero-copy">
-        <span>Horaires réels · Tarifs · Correspondances</span>
-        <h1>Trouvez votre prochain train</h1>
-        <p>Recherche directe ou avec correspondance entre les lignes A, D et E.</p>
+        <p class="eyebrow">Voyages ferroviaires en Tunisie</p>
+        <h1>Planifiez votre trajet avec une experience claire, rapide et fiable.</h1>
+        <p>Trouvez les prochains trains, comparez les horaires et gardez vos trajets favoris a portee de main.</p>
       </div>
-
-      <div class="hero-dots" aria-hidden="true">
-        <button class="hero-dot active" type="button"></button>
-        <button class="hero-dot" type="button"></button>
-        <button class="hero-dot" type="button"></button>
-      </div>
-    </section>
-
-    <section class="search-card" aria-label="Recherche de trajet">
-      <div class="card-title">
-        <div>
-          <span>Recherche</span>
-          <h2>Votre trajet</h2>
+      <div class="hero-controls">
+        <button id="prevHero" class="hero-arrow" type="button" aria-label="Image precedente">‹</button>
+        <div class="hero-dots" aria-hidden="true">
+          <span class="active"></span>
+          <span></span>
+          <span></span>
         </div>
+        <button id="nextHero" class="hero-arrow" type="button" aria-label="Image suivante">›</button>
       </div>
-
-      <div class="station-stack">
-        <label class="station-row">
-          <span>Départ</span>
-          <input id="originInput" autocomplete="off" value="Tunis Ville" />
-          <div class="suggestions" id="originSuggestions"></div>
-        </label>
-
-        <button class="swap-btn" id="swapBtn" type="button" aria-label="Inverser">⇅</button>
-
-        <label class="station-row">
-          <span>Destination</span>
-          <input id="destinationInput" autocomplete="off" value="Hammam Lif" />
-          <div class="suggestions" id="destinationSuggestions"></div>
-        </label>
-      </div>
-
-      <div class="meta-grid">
-        <label>
-          <span>Date</span>
-          <input id="dateInput" type="date" />
-        </label>
-
-        <label>
-          <span>Heure</span>
-          <input id="timeInput" type="time" value="05:00" />
-        </label>
-
-        <label>
-          <span>Personnes</span>
-          <input id="passengersInput" type="number" min="1" max="9" value="1" />
-        </label>
-      </div>
-
-      <button id="searchBtn" class="search-btn" type="button">Rechercher</button>
     </section>
 
-    <nav class="time-nav hidden" id="timeNav" aria-label="Navigation horaire">
-      <button id="earlierBtn" type="button">Plus tôt</button>
-      <button id="resetBtn" type="button">Maintenant</button>
-      <button id="laterBtn" type="button">Plus tard</button>
-    </nav>
+    <main class="main">
+      <section class="search-card" aria-labelledby="searchTitle">
+        <div class="search-card-head">
+          <div>
+            <p class="eyebrow">Recherche de trajets</p>
+            <h2 id="searchTitle">Ou souhaitez-vous aller ?</h2>
+          </div>
+          <span class="search-pill">API en temps reel</span>
+        </div>
 
-    <section class="account-card">
-      <div>
-        <span>Compte voyageur</span>
-        <strong id="passengerState">Non connecté</strong>
+        <div class="station-stack">
+          <label class="field station-field">
+            <span>Depart</span>
+            <input id="originInput" autocomplete="off" placeholder="Choisir une gare de depart" />
+            <input id="originId" type="hidden" />
+            <div id="originSuggestions" class="suggestions" role="listbox"></div>
+          </label>
+
+          <button id="swapBtn" class="swap-btn" type="button" aria-label="Inverser depart et destination">
+            <span>⇅</span>
+          </button>
+
+          <label class="field station-field">
+            <span>Destination</span>
+            <input id="destinationInput" autocomplete="off" placeholder="Choisir une gare d'arrivee" />
+            <input id="destinationId" type="hidden" />
+            <div id="destinationSuggestions" class="suggestions" role="listbox"></div>
+          </label>
+        </div>
+
+        <div class="search-meta-grid">
+          <label class="field">
+            <span>Date</span>
+            <input id="dateInput" type="date" />
+          </label>
+          <label class="field">
+            <span>Heure</span>
+            <input id="timeInput" type="time" />
+          </label>
+          <label class="field">
+            <span>Passagers</span>
+            <input id="passengersInput" type="number" min="1" max="9" value="1" />
+          </label>
+        </div>
+
+        <button id="searchBtn" class="primary-btn" type="button">Rechercher un train</button>
+        <p id="searchError" class="feedback error" role="alert"></p>
+      </section>
+
+      <section class="location-card">
+        <div class="location-card-copy">
+          <p class="eyebrow">Depart rapide</p>
+          <h2>Ma position</h2>
+          <p>Autorisez votre position pour estimer la gare la plus proche et pre-remplir votre depart.</p>
+        </div>
+        <button id="locationBtn" class="ghost-btn" type="button">Utiliser ma position</button>
+        <p id="locationResult" class="feedback"></p>
+      </section>
+
+      <section id="resultsSection" class="results hidden" aria-live="polite">
+        <div id="resultsToolbar" class="results-toolbar hidden">
+          <button id="earlierBtn" class="toolbar-btn" type="button">Plus tot</button>
+          <button id="laterBtn" class="toolbar-btn primary" type="button">Plus tard</button>
+        </div>
+
+        <div class="results-head">
+          <div>
+            <p class="eyebrow">Resultats</p>
+            <h2>Prochains departs</h2>
+          </div>
+          <span id="resultsCount" class="results-count"></span>
+        </div>
+        <p id="resultsMeta" class="results-meta"></p>
+        <div id="resultsList" class="results-list"></div>
+      </section>
+
+      <section id="detailsSection" class="details hidden">
+        <div class="details-head">
+          <button id="closeDetails" class="inline-btn" type="button">Retour aux resultats</button>
+        </div>
+        <div id="detailsContent"></div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Navigation principale">
+      <button class="active" type="button">Recherche</button>
+      <button type="button">Billets</button>
+      <button type="button">Favoris</button>
+      <button type="button">Infos trafic</button>
+      <button type="button">Profil</button>
+    </nav>
+  </div>
+
+  <section id="accountPanel" class="account-panel hidden" aria-hidden="true">
+    <div class="account-card">
+      <button id="closeAccount" class="close-btn" type="button" aria-label="Fermer">×</button>
+
+      <div id="accountAuthState">
+        <p class="eyebrow">Compte voyageur</p>
+        <h2 id="accountTitle">Connexion</h2>
+        <p id="accountSubtitle" class="account-subtitle">Connectez-vous pour retrouver vos preferences localement sur cet appareil.</p>
+
+        <div id="registerFields" class="register-grid hidden">
+          <label class="field">
+            <span>Matricule</span>
+            <input id="matricule" placeholder="Ex: AB1234" />
+          </label>
+          <label class="field">
+            <span>Prenom</span>
+            <input id="firstName" placeholder="Prenom" />
+          </label>
+          <label class="field">
+            <span>Nom</span>
+            <input id="lastName" placeholder="Nom" />
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Email</span>
+          <input id="email" type="email" placeholder="email@domain.tn" />
+        </label>
+        <label class="field">
+          <span>Mot de passe</span>
+          <input id="password" type="password" placeholder="Mot de passe" />
+        </label>
+
+        <button id="accountSubmit" class="primary-btn" type="button">Se connecter</button>
+        <button id="toggleRegister" class="secondary-btn" type="button">Creer un compte</button>
+        <p id="accountMessage" class="feedback"></p>
       </div>
 
-      <details>
-        <summary>Connexion</summary>
-        <div class="account-form">
-          <input id="displayNameInput" placeholder="Nom affiché" />
-          <input id="registerEmailInput" placeholder="Email" type="email" />
-          <input id="registerPasswordInput" placeholder="Mot de passe" type="password" />
-          <button id="registerBtn" type="button">Créer compte</button>
-
-          <input id="loginEmailInput" placeholder="Email" type="email" />
-          <input id="loginPasswordInput" placeholder="Mot de passe" type="password" />
-          <div class="account-buttons">
-            <button id="loginBtn" type="button">Se connecter</button>
-            <button id="logoutBtn" type="button">Déconnexion</button>
+      <div id="accountProfileState" class="hidden">
+        <p class="eyebrow">Session active</p>
+        <h2 id="profileName">Voyageur</h2>
+        <p id="profileEmail" class="account-subtitle"></p>
+        <div class="profile-summary">
+          <div>
+            <span>Matricule</span>
+            <strong id="profileMatricule">-</strong>
+          </div>
+          <div>
+            <span>Favoris</span>
+            <strong id="profileFavoritesCount">0</strong>
           </div>
         </div>
-      </details>
-    </section>
-
-    <section class="results-head">
-      <div>
-        <span>Résultats</span>
-        <h2 id="resultsTitle">Prochains départs</h2>
+        <button id="logoutBtn" class="secondary-btn" type="button">Se deconnecter</button>
       </div>
-      <p id="resultMeta"></p>
-    </section>
+    </div>
+  </section>
 
-    <section class="journey-list" id="journeyList">
-      <article class="empty-state">
-        <h3>Recherchez un trajet</h3>
-        <p>Les trains directs, correspondances et prix apparaîtront ici.</p>
-      </article>
-    </section>
-
-    <nav class="pagination" aria-label="Pagination">
-      <button id="previousPageBtn" type="button">Précédent</button>
-      <button id="nextPageBtn" type="button">Suivant</button>
-    </nav>
-
-    <section class="details-card">
-      <h2 id="detailsTitle">Détails du trajet</h2>
-      <div id="detailsBody">
-        <p>Sélectionnez un trajet.</p>
-      </div>
-    </section>
-  </main>
-
-  <script src="./app.js" defer></script>
+  <script src="./app.js"></script>
 </body>
 </html>

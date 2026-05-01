@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="760" viewBox="0 0 1600 760">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#EAF3FF"/>
+      <stop offset=".52" stop-color="#CFE7FF"/>
+      <stop offset="1" stop-color="#F7FAFC"/>
+    </linearGradient>
+    <linearGradient id="train" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F8FAFC"/>
+      <stop offset=".5" stop-color="#CBD5E1"/>
+      <stop offset="1" stop-color="#64748B"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="760" fill="url(#sky)"/>
+  <g opacity=".55">
+    <rect x="1030" y="90" width="55" height="360" fill="#E2E8F0"/>
+    <rect x="1046" y="30" width="22" height="80" fill="#CBD5E1"/>
+    <rect x="220" y="235" width="90" height="260" fill="#E2E8F0"/>
+    <rect x="330" y="175" width="120" height="320" fill="#E2E8F0"/>
+    <rect x="1180" y="215" width="155" height="285" fill="#E2E8F0"/>
+  </g>
+  <path d="M0 540 C360 435 780 422 1600 520 L1600 760 L0 760Z" fill="#E5E7EB"/>
+  <path d="M130 580 C470 470 850 470 1500 590" fill="none" stroke="#334155" stroke-width="10" opacity=".32"/>
+  <path d="M120 615 C490 500 870 505 1540 635" fill="none" stroke="#334155" stroke-width="7" opacity=".25"/>
+  <g transform="translate(330 300) rotate(-4)">
+    <path d="M0 145 C45 60 155 20 330 20 H760 C890 20 1010 75 1085 155 C1115 187 1100 240 1055 255 C760 355 330 350 45 260 C-10 242 -25 190 0 145Z" fill="url(#train)"/>
+    <path d="M720 42 C845 56 940 100 1005 174 C943 186 815 185 735 176 C692 171 682 139 696 99Z" fill="#0F172A" opacity=".85"/>
+    <rect x="135" y="70" width="510" height="68" rx="25" fill="#0B3C5D" opacity=".8"/>
+    <g fill="#00A896">
+      <rect x="190" y="138" width="56" height="106" rx="12"/>
+      <rect x="410" y="138" width="56" height="106" rx="12"/>
+      <rect x="605" y="138" width="56" height="106" rx="12"/>
+    </g>
+    <circle cx="920" cy="230" r="32" fill="#1F2937"/>
+    <circle cx="1000" cy="210" r="25" fill="#1F2937"/>
+    <circle cx="920" cy="230" r="13" fill="#CBD5E1"/>
+    <circle cx="1000" cy="210" r="10" fill="#CBD5E1"/>
+  </g>
+</svg>

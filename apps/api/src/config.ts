@@ -7,7 +7,7 @@ const port = Number(process.env.API_PORT ?? process.env.PORT ?? 3000);
 export const config = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: Number.isFinite(port) ? port : 3000,
-  corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:3000,http://127.0.0.1:4170,http://127.0.0.1:5175',
+  corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:3000,http://127.0.0.1:4170,http://localhost:4170,http://127.0.0.1:5175,http://localhost:5175',
   supabaseUrl: process.env.SUPABASE_URL ?? '',
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
   supabaseAnonKey: process.env.SUPABASE_ANON_KEY ?? '',

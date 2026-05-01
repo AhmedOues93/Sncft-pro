@@ -1,232 +1,440 @@
-const storageKey = 'sncft_admin_api_base';
-const tokenKey = 'sncft_admin_auth_token';
+const API_BASE_KEY = 'sncft_api_base';
+const DEFAULT_API_BASE = 'http://127.0.0.1:3000';
+const TOKEN_KEY = 'sncft_admin_token';
+const SESSION_KEY = 'sncft_admin_session';
+const ACCOUNT_KEY = 'sncft_admin_accounts';
+const MATRICULE_REGEX = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z0-9]+$/;
+
 const state = {
-  apiBaseUrl: localStorage.getItem(storageKey) || 'http://localhost:3000',
-  authToken: localStorage.getItem(tokenKey) || '',
-  latestScheduleDraftId: null,
-  latestFareDraftId: null,
+  authMode: 'login',
+  session: null,
 };
 
-const el = {
-  apiBaseUrl: document.getElementById('apiBaseUrl'),
-  saveApiConfig: document.getElementById('saveApiConfig'),
-  authToken: document.getElementById('authToken'),
-  refreshActive: document.getElementById('refreshActive'),
-  refreshHistory: document.getElementById('refreshHistory'),
-  activeOutput: document.getElementById('activeOutput'),
-  historyOutput: document.getElementById('historyOutput'),
-  registerEmployeeNumber: document.getElementById('registerEmployeeNumber'),
-  registerFirstName: document.getElementById('registerFirstName'),
-  registerLastName: document.getElementById('registerLastName'),
-  registerEmail: document.getElementById('registerEmail'),
-  registerPassword: document.getElementById('registerPassword'),
-  registerAdmin: document.getElementById('registerAdmin'),
-  loginEmail: document.getElementById('loginEmail'),
-  loginPassword: document.getElementById('loginPassword'),
-  loginAdmin: document.getElementById('loginAdmin'),
-  logoutAdmin: document.getElementById('logoutAdmin'),
-  adminIdentity: document.getElementById('adminIdentity'),
-  scheduleFile: document.getElementById('scheduleFile'),
-  scheduleCsv: document.getElementById('scheduleCsv'),
-  previewSchedule: document.getElementById('previewSchedule'),
-  saveSchedule: document.getElementById('saveSchedule'),
-  publishSchedule: document.getElementById('publishSchedule'),
-  rollbackSchedule: document.getElementById('rollbackSchedule'),
-  scheduleOutput: document.getElementById('scheduleOutput'),
-  fareFile: document.getElementById('fareFile'),
-  fareCsv: document.getElementById('fareCsv'),
-  previewFare: document.getElementById('previewFare'),
-  saveFare: document.getElementById('saveFare'),
-  publishFare: document.getElementById('publishFare'),
-  rollbackFare: document.getElementById('rollbackFare'),
-  fareOutput: document.getElementById('fareOutput'),
-};
+const $ = (id) => document.getElementById(id);
 
-el.apiBaseUrl.value = state.apiBaseUrl;
-el.authToken.value = state.authToken;
+function apiBase() {
+  return localStorage.getItem(API_BASE_KEY) || DEFAULT_API_BASE;
+}
 
-function jsonOut(node, payload) {
-  node.textContent = JSON.stringify(payload, null, 2);
+function setHero(container, index) {
+  const slides = Array.from(container.querySelectorAll('.hero-slide'));
+  if (!slides.length) return;
+  const safeIndex = (index + slides.length) % slides.length;
+  slides.forEach((slide, slideIndex) => slide.classList.toggle('active', slideIndex === safeIndex));
+  container.dataset.heroIndex = String(safeIndex);
+}
+
+function initHeroRotations() {
+  document.querySelectorAll('.auth-hero, .dashboard-hero').forEach((container) => {
+    setHero(container, 0);
+    window.setInterval(() => {
+      const current = Number(container.dataset.heroIndex || 0);
+      setHero(container, current + 1);
+    }, 5600);
+  });
+}
+
+function accounts() {
+  try {
+    return JSON.parse(localStorage.getItem(ACCOUNT_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function saveAccounts(list) {
+  localStorage.setItem(ACCOUNT_KEY, JSON.stringify(list));
+}
+
+function seedAccounts() {
+  const demo = {
+    matricule: 'ADM123',
+    firstName: 'Admin',
+    lastName: 'Local',
+    email: 'admin@domain.tn',
+    password: 'admin123',
+  };
+
+  const list = accounts();
+  if (list.some((account) => account.email === demo.email)) return;
+  saveAccounts([demo, ...list]);
+}
+
+function setAuthMode(mode) {
+  state.authMode = mode === 'register' ? 'register' : 'login';
+  const registerMode = state.authMode === 'register';
+
+  $('registerFields').classList.toggle('hidden', !registerMode);
+  $('authTitle').textContent = registerMode ? 'Creer un compte admin' : 'Connexion admin';
+  $('authText').textContent = registerMode
+    ? 'Créez un compte local admin avec matricule, nom, prenom, email et mot de passe.'
+    : 'Connectez-vous pour gerer les imports et les versions publiees.';
+  $('authSubmit').textContent = registerMode ? 'Creer mon compte' : 'Se connecter';
+  $('loginTab').classList.toggle('active', !registerMode);
+  $('registerTab').classList.toggle('active', registerMode);
+  setAuthMessage('');
+}
+
+function setAuthMessage(message, tone = 'default') {
+  $('authMessage').textContent = message || '';
+  $('authMessage').style.color = tone === 'error' ? '#EF4444' : tone === 'success' ? '#16A34A' : '#6B7280';
+}
+
+function setDashboardMessage(message, tone = 'default') {
+  $('dashboardMessage').textContent = message || '';
+  $('dashboardMessage').style.color = tone === 'error' ? '#EF4444' : tone === 'success' ? '#16A34A' : '#6B7280';
+}
+
+function persistSession(account) {
+  state.session = {
+    matricule: account.matricule,
+    firstName: account.firstName,
+    lastName: account.lastName,
+    email: account.email,
+  };
+  localStorage.setItem(SESSION_KEY, JSON.stringify(state.session));
+  localStorage.setItem(TOKEN_KEY, 'dev-token');
+}
+
+function restoreSession() {
+  try {
+    state.session = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+  } catch {
+    state.session = null;
+  }
+
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token || !state.session) {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(SESSION_KEY);
+    state.session = null;
+  }
+}
+
+function renderSession() {
+  $('sessionName').textContent = state.session ? `${state.session.firstName} ${state.session.lastName}`.trim() : 'Admin';
+  $('sessionEmail').textContent = state.session?.email || 'admin@domain.tn';
+}
+
+function showDashboard() {
+  $('authPage').classList.add('hidden');
+  $('dashboardPage').classList.remove('hidden');
+  renderSession();
+  $('apiBaseInput').value = apiBase();
+  refreshDashboard();
+}
+
+function showAuth() {
+  $('dashboardPage').classList.add('hidden');
+  $('authPage').classList.remove('hidden');
+}
+
+function clearAuthInputs() {
+  ['matricule', 'firstName', 'lastName', 'email', 'password'].forEach((id) => {
+    const field = $(id);
+    if (field) field.value = '';
+  });
+}
+
+function register() {
+  const matricule = $('matricule').value.trim();
+  const firstName = $('firstName').value.trim();
+  const lastName = $('lastName').value.trim();
+  const email = $('email').value.trim().toLowerCase();
+  const password = $('password').value.trim();
+
+  if (!matricule || !firstName || !lastName || !email || !password) {
+    setAuthMessage('Remplissez tous les champs pour creer le compte.', 'error');
+    return;
+  }
+
+  if (!MATRICULE_REGEX.test(matricule)) {
+    setAuthMessage('Le matricule doit contenir au moins une lettre et un chiffre.', 'error');
+    return;
+  }
+
+  const list = accounts();
+  if (list.some((account) => account.email === email)) {
+    setAuthMessage('Un compte avec cet email existe deja.', 'error');
+    return;
+  }
+
+  list.push({
+    matricule,
+    firstName,
+    lastName,
+    email,
+    password,
+    createdAt: new Date().toISOString(),
+  });
+
+  saveAccounts(list);
+  setAuthMode('login');
+  $('email').value = email;
+  $('password').value = '';
+  setAuthMessage('Compte cree. Connectez-vous maintenant.', 'success');
+}
+
+function login() {
+  const email = $('email').value.trim().toLowerCase();
+  const password = $('password').value.trim();
+
+  if (!email || !password) {
+    setAuthMessage('Entrez votre email et votre mot de passe.', 'error');
+    return;
+  }
+
+  const account = accounts().find((item) => item.email === email && item.password === password);
+  if (!account) {
+    setAuthMessage('Compte introuvable. Utilisez admin@domain.tn / admin123 ou creez un compte.', 'error');
+    return;
+  }
+
+  persistSession(account);
+  setAuthMessage('');
+  showDashboard();
+}
+
+function logout() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(SESSION_KEY);
+  state.session = null;
+  clearAuthInputs();
+  setDashboardMessage('');
+  showAuth();
+  setAuthMode('login');
 }
 
 async function api(path, options = {}) {
-  const response = await fetch(`${state.apiBaseUrl}${path}`, {
-    headers: { 'content-type': 'application/json', ...(state.authToken ? { authorization: `Bearer ${state.authToken}` } : {}), ...(options.headers || {}) },
+  const init = {
     ...options,
-  });
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY) || 'dev-token'}`,
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(options.headers || {}),
+    },
+  };
+
+  const response = await fetch(`${apiBase()}${path}`, init);
   const text = await response.text();
-  let body = text;
-  try { body = JSON.parse(text); } catch {}
-  if (!response.ok) throw new Error(typeof body === 'string' ? body : JSON.stringify(body));
-  return body;
-}
+  let data = {};
 
-async function loadActive() {
   try {
-    const data = await api('/admin/imports/active');
-    jsonOut(el.activeOutput, data);
-  } catch (error) {
-    jsonOut(el.activeOutput, { error: String(error) });
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = text;
   }
+
+  if (!response.ok) {
+    const message = typeof data === 'string' ? data : data.error || `HTTP ${response.status}`;
+    throw new Error(message);
+  }
+
+  return data;
 }
 
-async function loadHistory() {
-  try {
-    const data = await api('/admin/imports');
-    jsonOut(el.historyOutput, data);
-  } catch (error) {
-    jsonOut(el.historyOutput, { error: String(error) });
-  }
+function formatError(error) {
+  if (error instanceof Error) return error.message;
+  return 'Operation impossible.';
 }
 
-async function preview(kind) {
-  const csv = kind === 'schedule' ? el.scheduleCsv.value : el.fareCsv.value;
-  if (!csv.trim()) return;
-  const path = kind === 'schedule' ? '/admin/imports/schedules/preview' : '/admin/imports/fares/preview';
-  const target = kind === 'schedule' ? el.scheduleOutput : el.fareOutput;
-  try {
-    const data = await api(path, { method: 'POST', body: JSON.stringify({ csv }) });
-    jsonOut(target, data);
-  } catch (error) {
-    jsonOut(target, { error: String(error) });
+async function readCsv(fileInput, textarea) {
+  const files = Array.from(fileInput.files || []);
+  if (files.length) {
+    const parts = [];
+    for (const file of files) {
+      parts.push(await file.text());
+    }
+    return parts.join('\n');
   }
+  return textarea.value.trim();
 }
 
-async function saveDraft(kind) {
-  const csv = kind === 'schedule' ? el.scheduleCsv.value : el.fareCsv.value;
-  if (!csv.trim()) return;
-  const filename = kind === 'schedule' ? (el.scheduleFile.files?.[0]?.name || 'schedules.csv') : (el.fareFile.files?.[0]?.name || 'fares.csv');
-  const path = kind === 'schedule' ? '/admin/imports/schedules' : '/admin/imports/fares';
-  const target = kind === 'schedule' ? el.scheduleOutput : el.fareOutput;
-  try {
-    const data = await api(path, { method: 'POST', body: JSON.stringify({ csv, filename }) });
-    if (kind === 'schedule') state.latestScheduleDraftId = data.id;
-    else state.latestFareDraftId = data.id;
-    jsonOut(target, data);
-    await loadHistory();
-  } catch (error) {
-    jsonOut(target, { error: String(error) });
-  }
+function summaryRows(item) {
+  return item?.summary?.total_rows
+    || item?.summary?.fare_rows_count
+    || item?.summary?.stop_times_count
+    || item?.summary?.trips_count
+    || '—';
 }
 
-async function publish(kind) {
-  const id = kind === 'schedule' ? state.latestScheduleDraftId : state.latestFareDraftId;
-  const target = kind === 'schedule' ? el.scheduleOutput : el.fareOutput;
-  if (!id) return jsonOut(target, { error: 'Aucun draft disponible.' });
-  try {
-    const data = await api(`/admin/imports/${id}/publish`, { method: 'POST', body: '{}' });
-    jsonOut(target, data);
-    await loadActive();
-  } catch (error) {
-    jsonOut(target, { error: String(error) });
-  }
+function formatPreviewResult(data) {
+  return JSON.stringify(data, null, 2);
 }
 
-async function rollback(kind) {
-  const id = kind === 'schedule' ? state.latestScheduleDraftId : state.latestFareDraftId;
-  const target = kind === 'schedule' ? el.scheduleOutput : el.fareOutput;
-  if (!id) return jsonOut(target, { error: 'Aucun draft connu pour rollback.' });
+async function previewImport(kind) {
+  const output = kind === 'schedule' ? $('scheduleOut') : $('fareOut');
+  const csv = kind === 'schedule'
+    ? await readCsv($('scheduleFile'), $('scheduleCsv'))
+    : await readCsv($('fareFile'), $('fareCsv'));
 
-  const path = kind === 'schedule' ? `/admin/imports/${id}/rollback` : `/admin/imports/fares/${id}/rollback`;
-  try {
-    const data = await api(path, { method: 'POST', body: '{}' });
-    jsonOut(target, data);
-    await loadActive();
-  } catch (error) {
-    jsonOut(target, { error: String(error) });
-  }
-}
-
-
-async function loadAdminMe() {
-  if (!state.authToken) {
-    el.adminIdentity.textContent = 'Non connecté';
+  if (!csv) {
+    output.textContent = 'Choisissez un fichier CSV ou collez son contenu.';
     return;
   }
-  try {
-    const me = await api('/admin/auth/me');
-    el.adminIdentity.textContent = `${me.firstName} ${me.lastName} (${me.role}, ${me.status})`;
-  } catch (error) {
-    el.adminIdentity.textContent = `Erreur auth: ${String(error)}`;
-  }
-}
 
-async function registerAdmin() {
-  try {
-    const payload = {
-      employeeNumber: el.registerEmployeeNumber.value.trim(),
-      firstName: el.registerFirstName.value.trim(),
-      lastName: el.registerLastName.value.trim(),
-      email: el.registerEmail.value.trim(),
-      password: el.registerPassword.value,
-    };
-    const data = await api('/admin/auth/register', { method: 'POST', body: JSON.stringify(payload), headers: { authorization: '' } });
-    jsonOut(el.activeOutput, data);
-  } catch (error) {
-    jsonOut(el.activeOutput, { error: String(error) });
-  }
-}
+  output.textContent = 'Preview en cours...';
 
-async function loginAdmin() {
   try {
-    const data = await api('/admin/auth/login', {
+    const path = kind === 'schedule' ? '/admin/imports/schedules/preview' : '/admin/imports/fares/preview';
+    const data = await api(path, {
       method: 'POST',
-      body: JSON.stringify({ email: el.loginEmail.value.trim(), password: el.loginPassword.value }),
-      headers: { authorization: '' },
+      body: JSON.stringify({ csv }),
     });
-    state.authToken = data.accessToken;
-    el.authToken.value = state.authToken;
-    localStorage.setItem(tokenKey, state.authToken);
-    await loadAdminMe();
+    output.textContent = formatPreviewResult(data);
+    setDashboardMessage(`Preview ${kind === 'schedule' ? 'horaires' : 'tarifs'} chargee.`, 'success');
   } catch (error) {
-    jsonOut(el.activeOutput, { error: String(error) });
+    output.textContent = `Erreur: ${formatError(error)}`;
+    setDashboardMessage(formatError(error), 'error');
   }
 }
 
-async function logoutAdmin() {
+async function publishImport(kind) {
+  const output = kind === 'schedule' ? $('scheduleOut') : $('fareOut');
+  const csv = kind === 'schedule'
+    ? await readCsv($('scheduleFile'), $('scheduleCsv'))
+    : await readCsv($('fareFile'), $('fareCsv'));
+
+  if (!csv) {
+    output.textContent = 'Choisissez un fichier CSV ou collez son contenu.';
+    return;
+  }
+
+  output.textContent = 'Creation du draft...';
+
   try {
-    if (state.authToken) await api('/admin/auth/logout', { method: 'POST', body: '{}' });
-  } catch {}
-  state.authToken = '';
-  el.authToken.value = '';
-  localStorage.removeItem(tokenKey);
-  await loadAdminMe();
+    const createPath = kind === 'schedule' ? '/admin/imports/schedules' : '/admin/imports/fares';
+    const draft = await api(createPath, {
+      method: 'POST',
+      body: JSON.stringify({
+        csv,
+        filename: `${kind}.csv`,
+      }),
+    });
+
+    output.textContent = `Draft cree: ${draft.id}\nPublication en cours...`;
+
+    const published = await api(`/admin/imports/${draft.id}/publish`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+
+    output.textContent = formatPreviewResult({ draft, published });
+    setDashboardMessage(`Import ${kind === 'schedule' ? 'horaires' : 'tarifs'} publie avec succes.`, 'success');
+    await refreshDashboard();
+  } catch (error) {
+    output.textContent = `Erreur: ${formatError(error)}`;
+    setDashboardMessage(formatError(error), 'error');
+  }
 }
 
-function bindCsvFile(input, textarea) {
-  input.addEventListener('change', async () => {
-    const file = input.files?.[0];
-    if (!file) return;
-    textarea.value = await file.text();
+function renderImportsTable(items, activeVersions) {
+  if (!items.length) {
+    $('importsTable').innerHTML = '<tr><td colspan="6">Aucun import charge.</td></tr>';
+    return;
+  }
+
+  $('importsTable').innerHTML = items.map((item) => {
+    const isActive = item.kind === 'schedule'
+      ? item.id === activeVersions.scheduleImportId
+      : item.id === activeVersions.fareImportId;
+
+    return `
+      <tr>
+        <td>${item.kind || '—'}</td>
+        <td>${item.id || '—'}</td>
+        <td>${item.status || '—'}</td>
+        <td>${item.createdAt ? new Date(item.createdAt).toLocaleString('fr-FR') : '—'}</td>
+        <td>${summaryRows(item)}</td>
+        <td><span class="row-badge ${isActive ? 'active' : 'idle'}">${isActive ? 'Oui' : 'Non'}</span></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function refreshDashboard() {
+  $('apiBaseInput').value = apiBase();
+  $('sidebarApiBase').textContent = apiBase();
+  setDashboardMessage('');
+
+  const healthPromise = fetch(`${apiBase()}/health`);
+  const activePromise = api('/admin/imports/active');
+  const importsPromise = api('/admin/imports');
+
+  const [healthResult, activeResult, importsResult] = await Promise.allSettled([
+    healthPromise,
+    activePromise,
+    importsPromise,
+  ]);
+
+  if (healthResult.status === 'fulfilled') {
+    $('apiStatus').textContent = healthResult.value.ok ? 'API OK' : 'API erreur';
+    $('apiStatusDetail').textContent = healthResult.value.ok ? 'Service joignable' : `HTTP ${healthResult.value.status}`;
+    $('sidebarApiStatus').textContent = healthResult.value.ok ? 'Connectee' : 'Erreur';
+    $('sidebarApiStatus').style.color = healthResult.value.ok ? '#BBF7D0' : '#FECACA';
+  } else {
+    $('apiStatus').textContent = 'API indisponible';
+    $('apiStatusDetail').textContent = 'Impossible de joindre le service';
+    $('sidebarApiStatus').textContent = 'Indisponible';
+    $('sidebarApiStatus').style.color = '#FECACA';
+    setDashboardMessage(`Connexion API impossible sur ${apiBase()}.`, 'error');
+  }
+
+  const activeVersions = activeResult.status === 'fulfilled'
+    ? activeResult.value
+    : { scheduleImportId: null, fareImportId: null };
+
+  $('activeSchedules').textContent = activeVersions.scheduleImportId || '-';
+  $('activeFares').textContent = activeVersions.fareImportId || '-';
+  $('activeScheduleInline').textContent = activeVersions.scheduleImportId || '-';
+  $('activeFareInline').textContent = activeVersions.fareImportId || '-';
+
+  if (importsResult.status === 'fulfilled') {
+    const items = Array.isArray(importsResult.value.items) ? importsResult.value.items : [];
+    $('importsCount').textContent = String(items.length);
+    renderImportsTable(items, activeVersions);
+  } else {
+    $('importsCount').textContent = '0';
+    $('importsTable').innerHTML = `<tr><td colspan="6">Erreur: ${formatError(importsResult.reason)}</td></tr>`;
+    if (!$('dashboardMessage').textContent) setDashboardMessage(formatError(importsResult.reason), 'error');
+  }
+}
+
+function saveApiBase() {
+  const value = $('apiBaseInput').value.trim() || DEFAULT_API_BASE;
+  localStorage.setItem(API_BASE_KEY, value);
+  $('sidebarApiBase').textContent = value;
+  setDashboardMessage('API base mise a jour.', 'success');
+  refreshDashboard();
+}
+
+function bind() {
+  $('loginTab').addEventListener('click', () => setAuthMode('login'));
+  $('registerTab').addEventListener('click', () => setAuthMode('register'));
+  $('authSubmit').addEventListener('click', () => {
+    if (state.authMode === 'register') register();
+    else login();
   });
+
+  $('logoutBtn').addEventListener('click', logout);
+  $('saveApiBase').addEventListener('click', saveApiBase);
+  $('refreshBtn').addEventListener('click', refreshDashboard);
+  $('previewSchedules').addEventListener('click', () => previewImport('schedule'));
+  $('publishSchedules').addEventListener('click', () => publishImport('schedule'));
+  $('previewFares').addEventListener('click', () => previewImport('fare'));
+  $('publishFares').addEventListener('click', () => publishImport('fare'));
 }
 
-el.saveApiConfig.onclick = () => {
-  state.apiBaseUrl = el.apiBaseUrl.value.trim() || 'http://localhost:3000';
-  localStorage.setItem(storageKey, state.apiBaseUrl);
-  state.authToken = el.authToken.value.trim();
-  localStorage.setItem(tokenKey, state.authToken);
-  loadActive();
-};
-el.refreshActive.onclick = loadActive;
-el.refreshHistory.onclick = loadHistory;
-el.registerAdmin.onclick = registerAdmin;
-el.loginAdmin.onclick = loginAdmin;
-el.logoutAdmin.onclick = logoutAdmin;
+window.addEventListener('DOMContentLoaded', () => {
+  seedAccounts();
+  restoreSession();
+  initHeroRotations();
+  bind();
+  setAuthMode('login');
 
-el.previewSchedule.onclick = () => preview('schedule');
-el.saveSchedule.onclick = () => saveDraft('schedule');
-el.publishSchedule.onclick = () => publish('schedule');
-el.rollbackSchedule.onclick = () => rollback('schedule');
-
-el.previewFare.onclick = () => preview('fare');
-el.saveFare.onclick = () => saveDraft('fare');
-el.publishFare.onclick = () => publish('fare');
-el.rollbackFare.onclick = () => rollback('fare');
-
-bindCsvFile(el.scheduleFile, el.scheduleCsv);
-bindCsvFile(el.fareFile, el.fareCsv);
-
-loadActive();
-loadHistory();
-loadAdminMe();
+  if (state.session && localStorage.getItem(TOKEN_KEY)) {
+    showDashboard();
+  } else {
+    showAuth();
+  }
+});

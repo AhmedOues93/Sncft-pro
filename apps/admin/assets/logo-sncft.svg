@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="280" height="76" viewBox="0 0 280 76">
+  <rect width="280" height="76" rx="18" fill="none"/>
+  <path d="M18 18h96c16 0 28 9 33 24H48c-9 0-17-4-22-12L18 18Z" fill="#0B3C5D"/>
+  <path d="M27 36h96c16 0 28 9 33 24H57c-9 0-17-4-22-12L27 36Z" fill="#1E88E5"/>
+  <text x="166" y="32" font-family="Inter, Arial, sans-serif" font-weight="900" font-size="18" fill="#0B3C5D">SNCFT</text>
+  <text x="166" y="51" font-family="Inter, Arial, sans-serif" font-weight="600" font-size="9" fill="#6B7280">CHEMINS DE FER TUNISIENS</text>
+</svg>

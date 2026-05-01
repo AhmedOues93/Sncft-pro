@@ -1,97 +1,249 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SNCFT Admin</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SNCFT Navigator Admin</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-  <main class="container">
-    <header class="hero card">
-      <div class="hero-main">
-        <img class="brand-logo" src="./assets/sncft-logo.png" alt="SNCFT" onerror="this.style.display='none'" />
-        <p class="eyebrow">SNCFT Navigator</p>
-        <h1>Tableau de bord Administration</h1>
-        <p class="muted">Workflow complet: prévisualiser, valider, publier et rollback des imports horaires/tarifs.</p>
-      </div>
-      <div class="hero-panel">
-        <label class="label">API Base URL <input id="apiBaseUrl" /></label>
-        <label class="label">Auth Token <input id="authToken" placeholder="Bearer token" /></label>
-        <div class="row actions-row">
-          <button id="saveApiConfig">Enregistrer</button>
-          <button id="refreshActive" class="secondary">Active Versions</button>
-          <button id="refreshHistory" class="secondary">Historique</button>
-        </div>
-      </div>
-    </header>
+  <section id="authPage" class="auth-page">
+    <div class="auth-hero">
+      <div class="hero-slide active"></div>
+      <div class="hero-slide"></div>
+      <div class="hero-slide"></div>
+      <div class="hero-overlay"></div>
 
-    <section class="card">
-      <div class="section-title">
-        <h2>Comptes admin</h2>
-        <span class="chip">Rôles & statuts</span>
+      <div class="auth-hero-copy">
+        <img src="./assets/logo-sncft.svg" alt="SNCFT Navigator" />
+        <div>
+          <p class="eyebrow">Back-office ferroviaire</p>
+          <h1>Pilotez les horaires, tarifs et publications depuis un seul tableau de bord.</h1>
+          <p>Verifiez l etat de l API, previsualisez vos CSV, publiez les imports actifs et suivez les versions en production.</p>
+        </div>
       </div>
-      <div class="row grid-3">
-        <input id="registerEmployeeNumber" placeholder="Numéro employé" />
-        <input id="registerFirstName" placeholder="Prénom" />
-        <input id="registerLastName" placeholder="Nom" />
-      </div>
-      <div class="row grid-3">
-        <input id="registerEmail" placeholder="Email" />
-        <input id="registerPassword" type="password" placeholder="Mot de passe" />
-        <button id="registerAdmin">Créer un compte admin</button>
-      </div>
-      <div class="row grid-4">
-        <input id="loginEmail" placeholder="Email" />
-        <input id="loginPassword" type="password" placeholder="Mot de passe" />
-        <button id="loginAdmin">Se connecter</button>
-        <button id="logoutAdmin" class="secondary">Se déconnecter</button>
-      </div>
-      <p id="adminIdentity" class="state">Non connecté</p>
-      <pre id="activeOutput"></pre>
-    </section>
+    </div>
 
-    <section class="card split-card">
-      <div>
-        <div class="section-title">
-          <h2>Schedules CSV</h2>
-          <span class="chip chip-soft">Horaires</span>
-        </div>
-        <input id="scheduleFile" type="file" accept=".csv" />
-        <textarea id="scheduleCsv" rows="8" placeholder="Collez le CSV schedules"></textarea>
-        <div class="row actions-row">
-          <button id="previewSchedule" class="secondary">Preview</button>
-          <button id="saveSchedule">Save Draft</button>
-          <button id="publishSchedule">Publish Latest</button>
-          <button id="rollbackSchedule" class="danger">Rollback Latest</button>
-        </div>
-        <pre id="scheduleOutput"></pre>
-      </div>
-      <div>
-        <div class="section-title">
-          <h2>Fares CSV</h2>
-          <span class="chip chip-soft">Tarifs</span>
-        </div>
-        <input id="fareFile" type="file" accept=".csv" />
-        <textarea id="fareCsv" rows="8" placeholder="Collez le CSV fares"></textarea>
-        <div class="row actions-row">
-          <button id="previewFare" class="secondary">Preview</button>
-          <button id="saveFare">Save Draft</button>
-          <button id="publishFare">Publish Latest</button>
-          <button id="rollbackFare" class="danger">Rollback Latest</button>
-        </div>
-        <pre id="fareOutput"></pre>
-      </div>
-    </section>
+    <div class="auth-card">
+      <p class="eyebrow">Acces admin</p>
+      <h2 id="authTitle">Connexion admin</h2>
+      <p id="authText" class="auth-text">Connectez-vous pour gerer les imports et les versions publiees.</p>
 
-    <section class="card">
-      <div class="section-title">
-        <h2>Import History</h2>
-        <span class="chip">JSON</span>
+      <div class="auth-tabs">
+        <button id="loginTab" class="tab-btn active" type="button">Connexion</button>
+        <button id="registerTab" class="tab-btn" type="button">Creer un compte</button>
       </div>
-      <pre id="historyOutput"></pre>
-    </section>
-  </main>
-  <script type="module" src="./app.js"></script>
+
+      <div id="registerFields" class="register-grid hidden">
+        <label class="field">
+          <span>Matricule</span>
+          <input id="matricule" placeholder="Ex: ADM123" />
+        </label>
+        <label class="field">
+          <span>Prenom</span>
+          <input id="firstName" placeholder="Prenom" />
+        </label>
+        <label class="field">
+          <span>Nom</span>
+          <input id="lastName" placeholder="Nom" />
+        </label>
+      </div>
+
+      <label class="field">
+        <span>Email</span>
+        <input id="email" type="email" placeholder="admin@domain.tn" />
+      </label>
+      <label class="field">
+        <span>Mot de passe</span>
+        <input id="password" type="password" placeholder="admin123" />
+      </label>
+
+      <button id="authSubmit" class="primary-btn" type="button">Se connecter</button>
+      <p id="authMessage" class="feedback"></p>
+
+      <div class="demo-card">
+        <span>Compte demo</span>
+        <strong>admin@domain.tn</strong>
+        <small>Mot de passe : admin123</small>
+      </div>
+    </div>
+  </section>
+
+  <section id="dashboardPage" class="dashboard hidden">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <img src="./assets/logo-sncft.svg" alt="SNCFT Navigator" />
+        <p>SNCFT Navigator Admin</p>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="active" type="button">Vue d ensemble</button>
+        <button type="button">Imports CSV</button>
+        <button type="button">Versions actives</button>
+        <button type="button">Historique</button>
+      </nav>
+
+      <section class="sidebar-card">
+        <span>API de reference</span>
+        <strong id="sidebarApiStatus">Indisponible</strong>
+        <small id="sidebarApiBase">http://127.0.0.1:3000</small>
+      </section>
+
+      <section class="sidebar-card">
+        <label class="field compact">
+          <span>API base</span>
+          <input id="apiBaseInput" placeholder="http://127.0.0.1:3000" />
+        </label>
+        <button id="saveApiBase" class="secondary-btn small-btn" type="button">Enregistrer</button>
+      </section>
+    </aside>
+
+    <main class="dashboard-main">
+      <header class="dashboard-hero">
+        <div class="hero-slide active"></div>
+        <div class="hero-slide"></div>
+        <div class="hero-slide"></div>
+        <div class="hero-overlay"></div>
+
+        <div class="dashboard-hero-content">
+          <div>
+            <p class="eyebrow">Operations locales</p>
+            <h1>Publiez les donnees voyageurs en gardant une lecture claire des versions et du pipeline d import.</h1>
+            <p>Votre interface reste connectee aux endpoints existants avec autorisation Bearer dev-token pour les operations d administration.</p>
+          </div>
+
+          <div class="hero-actions">
+            <div class="session-chip">
+              <span id="sessionName">Admin</span>
+              <small id="sessionEmail">admin@domain.tn</small>
+            </div>
+            <button id="logoutBtn" class="light-btn" type="button">Deconnexion</button>
+          </div>
+        </div>
+      </header>
+
+      <section class="kpi-grid">
+        <article class="kpi-card">
+          <span>API status</span>
+          <strong id="apiStatus">Verification...</strong>
+          <small id="apiStatusDetail">Sante du service</small>
+        </article>
+        <article class="kpi-card">
+          <span>Horaires actifs</span>
+          <strong id="activeSchedules">-</strong>
+          <small>Version schedule publiee</small>
+        </article>
+        <article class="kpi-card">
+          <span>Tarifs actifs</span>
+          <strong id="activeFares">-</strong>
+          <small>Version fare publiee</small>
+        </article>
+        <article class="kpi-card">
+          <span>Imports</span>
+          <strong id="importsCount">0</strong>
+          <small>Historique charge</small>
+        </article>
+      </section>
+
+      <p id="dashboardMessage" class="dashboard-message"></p>
+
+      <section class="content-grid">
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Horaires</p>
+              <h2>Import schedules CSV</h2>
+            </div>
+            <span class="status-chip">Preview puis publish</span>
+          </div>
+
+          <label class="field">
+            <span>Fichier CSV</span>
+            <input id="scheduleFile" type="file" accept=".csv,text/csv" multiple />
+          </label>
+          <label class="field">
+            <span>Ou collez le contenu</span>
+            <textarea id="scheduleCsv" placeholder="Collez ici votre CSV horaires..."></textarea>
+          </label>
+
+          <div class="panel-actions">
+            <button id="previewSchedules" class="secondary-btn" type="button">Preview</button>
+            <button id="publishSchedules" class="primary-btn" type="button">Publish</button>
+          </div>
+
+          <pre id="scheduleOut" class="output-box">Aucune previsualisation pour le moment.</pre>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Tarifs</p>
+              <h2>Import fares CSV</h2>
+            </div>
+            <span class="status-chip green">Tarification</span>
+          </div>
+
+          <label class="field">
+            <span>Fichier CSV</span>
+            <input id="fareFile" type="file" accept=".csv,text/csv" multiple />
+          </label>
+          <label class="field">
+            <span>Ou collez le contenu</span>
+            <textarea id="fareCsv" placeholder="Collez ici votre CSV tarifs..."></textarea>
+          </label>
+
+          <div class="panel-actions">
+            <button id="previewFares" class="secondary-btn" type="button">Preview</button>
+            <button id="publishFares" class="primary-btn" type="button">Publish</button>
+          </div>
+
+          <pre id="fareOut" class="output-box">Aucune previsualisation pour le moment.</pre>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Versions publiees</p>
+            <h2>Imports actifs et historique</h2>
+          </div>
+          <button id="refreshBtn" class="secondary-btn small-btn" type="button">Rafraichir</button>
+        </div>
+
+        <div class="active-summary">
+          <div>
+            <span>Schedule active</span>
+            <strong id="activeScheduleInline">-</strong>
+          </div>
+          <div>
+            <span>Fare active</span>
+            <strong id="activeFareInline">-</strong>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>ID</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Lignes</th>
+                <th>Actif</th>
+              </tr>
+            </thead>
+            <tbody id="importsTable">
+              <tr>
+                <td colspan="6">Aucun import charge.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <script src="./app.js"></script>
 </body>
 </html>
