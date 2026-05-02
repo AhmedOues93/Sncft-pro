@@ -9,182 +9,244 @@
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <div class="brand">
-        <img src="./assets/logo-sncft.svg" alt="SNCFT Navigator" />
-      </div>
-      <button id="openAccount" class="account-chip" type="button">Compte</button>
+      <button id="brandButton" class="brand" type="button" aria-label="Retour a la recherche">
+        <img src="./assets/logo-sncft.png" alt="SNCFT" class="brand-logo" />
+        <span class="brand-copy">
+          <strong>SNCFT Navigator</strong>
+          <small>Trajets en temps reel</small>
+        </span>
+      </button>
+      <button id="openAccount" class="account-chip" type="button">Profil</button>
     </header>
 
-    <section class="hero" aria-label="Voyager en train">
-      <div class="hero-slide active"></div>
-      <div class="hero-slide"></div>
-      <div class="hero-slide"></div>
-      <div class="hero-overlay"></div>
-      <div class="hero-copy">
-        <p class="eyebrow">Voyages ferroviaires en Tunisie</p>
-        <h1>Planifiez votre trajet avec une experience claire, rapide et fiable.</h1>
-        <p>Trouvez les prochains trains, comparez les horaires et gardez vos trajets favoris a portee de main.</p>
-      </div>
-      <div class="hero-controls">
-        <button id="prevHero" class="hero-arrow" type="button" aria-label="Image precedente">‹</button>
-        <div class="hero-dots" aria-hidden="true">
-          <span class="active"></span>
-          <span></span>
-          <span></span>
-        </div>
-        <button id="nextHero" class="hero-arrow" type="button" aria-label="Image suivante">›</button>
-      </div>
-    </section>
-
     <main class="main">
-      <section class="search-card" aria-labelledby="searchTitle">
-        <div class="search-card-head">
-          <div>
-            <p class="eyebrow">Recherche de trajets</p>
-            <h2 id="searchTitle">Ou souhaitez-vous aller ?</h2>
+      <section id="searchView" class="view">
+        <section class="hero" aria-label="Planification des trajets">
+          <div class="hero-slide active"></div>
+          <div class="hero-slide"></div>
+          <div class="hero-slide"></div>
+          <div class="hero-overlay"></div>
+
+          <div class="hero-copy">
+            <h1>Planifiez votre trajet</h1>
+            <p>Horaires, correspondances et tarifs en temps reel.</p>
           </div>
-          <span class="search-pill">API en temps reel</span>
-        </div>
 
-        <div class="station-stack">
-          <label class="field station-field">
-            <span>Depart</span>
-            <input id="originInput" autocomplete="off" placeholder="Choisir une gare de depart" />
-            <input id="originId" type="hidden" />
-            <div id="originSuggestions" class="suggestions" role="listbox"></div>
-          </label>
-
-          <button id="swapBtn" class="swap-btn" type="button" aria-label="Inverser depart et destination">
-            <span>⇅</span>
-          </button>
-
-          <label class="field station-field">
-            <span>Destination</span>
-            <input id="destinationInput" autocomplete="off" placeholder="Choisir une gare d'arrivee" />
-            <input id="destinationId" type="hidden" />
-            <div id="destinationSuggestions" class="suggestions" role="listbox"></div>
-          </label>
-        </div>
-
-        <div class="search-meta-grid">
-          <label class="field">
-            <span>Date</span>
-            <input id="dateInput" type="date" />
-          </label>
-          <label class="field">
-            <span>Heure</span>
-            <input id="timeInput" type="time" />
-          </label>
-          <label class="field">
-            <span>Passagers</span>
-            <input id="passengersInput" type="number" min="1" max="9" value="1" />
-          </label>
-        </div>
-
-        <button id="searchBtn" class="primary-btn" type="button">Rechercher un train</button>
-        <p id="searchError" class="feedback error" role="alert"></p>
-      </section>
-
-      <section class="location-card">
-        <div class="location-card-copy">
-          <p class="eyebrow">Depart rapide</p>
-          <h2>Ma position</h2>
-          <p>Autorisez votre position pour estimer la gare la plus proche et pre-remplir votre depart.</p>
-        </div>
-        <button id="locationBtn" class="ghost-btn" type="button">Utiliser ma position</button>
-        <p id="locationResult" class="feedback"></p>
-      </section>
-
-      <section id="resultsSection" class="results hidden" aria-live="polite">
-        <div id="resultsToolbar" class="results-toolbar hidden">
-          <button id="earlierBtn" class="toolbar-btn" type="button">Plus tot</button>
-          <button id="laterBtn" class="toolbar-btn primary" type="button">Plus tard</button>
-        </div>
-
-        <div class="results-head">
-          <div>
-            <p class="eyebrow">Resultats</p>
-            <h2>Prochains departs</h2>
+          <div class="hero-dots" aria-hidden="true">
+            <span class="active"></span>
+            <span></span>
+            <span></span>
           </div>
-          <span id="resultsCount" class="results-count"></span>
-        </div>
-        <p id="resultsMeta" class="results-meta"></p>
-        <div id="resultsList" class="results-list"></div>
-      </section>
+        </section>
 
-      <section id="detailsSection" class="details hidden">
-        <div class="details-head">
+        <section class="search-card" aria-labelledby="searchTitle">
+          <div class="card-head">
+            <div>
+              <p class="eyebrow">Recherche</p>
+              <h2 id="searchTitle">Choisissez votre depart et votre destination</h2>
+            </div>
+          </div>
+
+          <div class="station-stack">
+            <label class="field station-field">
+              <span>Depart</span>
+              <input id="originInput" autocomplete="off" placeholder="Choisir une gare de depart" />
+              <input id="originId" type="hidden" />
+              <div id="originSuggestions" class="suggestions" role="listbox"></div>
+            </label>
+
+            <button id="swapBtn" class="swap-btn" type="button" aria-label="Inverser les gares">
+              <span>⇅</span>
+            </button>
+
+            <label class="field station-field">
+              <span>Destination</span>
+              <input id="destinationInput" autocomplete="off" placeholder="Choisir une destination" />
+              <input id="destinationId" type="hidden" />
+              <div id="destinationSuggestions" class="suggestions" role="listbox"></div>
+            </label>
+          </div>
+
+          <div class="meta-grid">
+            <label class="field field-inline">
+              <span>Date</span>
+              <div class="input-shell">
+                <span class="input-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M7 2v3M17 2v3M4 8h16M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/></svg>
+                </span>
+                <input id="dateInput" type="date" />
+              </div>
+            </label>
+
+            <label class="field field-inline">
+              <span>Heure</span>
+              <div class="input-shell">
+                <span class="input-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M12 7v5l3 2M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z"/></svg>
+                </span>
+                <input id="timeInput" type="time" />
+              </div>
+            </label>
+          </div>
+
+          <div class="search-actions-row">
+            <label class="field field-inline passengers-field">
+              <span>Passagers</span>
+              <div class="input-shell">
+                <span class="input-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><path d="M16 19a4 4 0 0 0-8 0M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM5 19a3 3 0 0 1 3-3M7 11a2.5 2.5 0 1 0 0-5M19 19a3 3 0 0 0-3-3M17 11a2.5 2.5 0 1 0 0-5"/></svg>
+                </span>
+                <input id="passengersInput" type="number" min="1" max="9" value="1" />
+              </div>
+            </label>
+
+            <button id="nowBtn" class="secondary-btn compact-btn" type="button">Maintenant</button>
+          </div>
+
+          <button id="searchBtn" class="primary-btn" type="button">Rechercher un train</button>
+          <p id="searchError" class="feedback error" role="alert"></p>
+        </section>
+
+        <section class="location-card">
+          <div>
+            <p class="eyebrow">Ma position</p>
+            <h2>Utiliser la gare la plus proche</h2>
+            <p>Autorisez votre position pour pre-remplir votre depart et estimer le temps de marche.</p>
+          </div>
+          <button id="locationBtn" class="ghost-btn" type="button">Utiliser ma position</button>
+          <p id="locationResult" class="feedback"></p>
+        </section>
+
+        <section id="resultsSection" class="results hidden" aria-live="polite">
+          <div class="results-head">
+            <div>
+              <p class="eyebrow">Resultats</p>
+              <h2 id="resultsTitle">Prochains departs</h2>
+            </div>
+            <span id="resultsCount" class="results-count"></span>
+          </div>
+
+          <p id="resultsMeta" class="results-meta"></p>
+          <p id="resultsNotice" class="results-notice hidden"></p>
+
+          <div id="resultsToolbar" class="results-toolbar hidden">
+            <button id="earlierBtn" class="toolbar-btn" type="button">Plus tot</button>
+            <button id="laterBtn" class="toolbar-btn primary" type="button">Plus tard</button>
+          </div>
+
+          <div id="resultsList" class="results-list"></div>
+        </section>
+
+        <section id="detailsSection" class="details hidden">
           <button id="closeDetails" class="inline-btn" type="button">Retour aux resultats</button>
+          <div id="detailsContent"></div>
+        </section>
+      </section>
+
+      <section id="favoritesView" class="view hidden">
+        <div class="page-card">
+          <div class="card-head">
+            <div>
+              <p class="eyebrow">Favoris</p>
+              <h2>Vos trajets enregistres</h2>
+            </div>
+          </div>
+          <div id="favoritesContent"></div>
         </div>
-        <div id="detailsContent"></div>
+      </section>
+
+      <section id="tripsView" class="view hidden">
+        <div class="page-card">
+          <div class="card-head">
+            <div>
+              <p class="eyebrow">Mes trajets</p>
+              <h2>Historique des recherches</h2>
+            </div>
+          </div>
+          <div id="tripsContent"></div>
+        </div>
+      </section>
+
+      <section id="profileView" class="view hidden">
+        <div id="profileGuest" class="page-card">
+          <div class="card-head">
+            <div>
+              <p class="eyebrow">Compte voyageur</p>
+              <h2 id="authTitle">Connexion</h2>
+              <p id="authSubtitle" class="card-subtitle">Connectez-vous pour retrouver vos favoris et vos trajets sur cet appareil.</p>
+            </div>
+          </div>
+
+          <div id="registerFields" class="register-grid hidden">
+            <label class="field">
+              <span>Nom</span>
+              <input id="lastName" placeholder="Nom" />
+            </label>
+            <label class="field">
+              <span>Prenom</span>
+              <input id="firstName" placeholder="Prenom" />
+            </label>
+            <label class="field">
+              <span>Date de naissance</span>
+              <input id="birthDate" type="date" />
+            </label>
+          </div>
+
+          <label class="field">
+            <span>Email</span>
+            <input id="email" type="email" placeholder="user@domain.tn" />
+          </label>
+          <label class="field">
+            <span>Mot de passe</span>
+            <input id="password" type="password" placeholder="Mot de passe" />
+          </label>
+
+          <button id="accountSubmit" class="primary-btn" type="button">Se connecter</button>
+          <button id="toggleRegister" class="secondary-btn" type="button">Creer un compte</button>
+          <p id="accountMessage" class="feedback"></p>
+        </div>
+
+        <div id="profileAccount" class="page-card hidden">
+          <div class="profile-header">
+            <div class="profile-avatar">S</div>
+            <div>
+              <p class="eyebrow">Profil</p>
+              <h2 id="profileGreeting">Salut</h2>
+              <p class="card-subtitle">Votre compte voyageur SNCFT Navigator.</p>
+            </div>
+          </div>
+
+          <div class="profile-grid">
+            <div class="info-card">
+              <span>Nom</span>
+              <strong id="profileLastName">-</strong>
+            </div>
+            <div class="info-card">
+              <span>Prenom</span>
+              <strong id="profileFirstName">-</strong>
+            </div>
+            <div class="info-card">
+              <span>Date de naissance</span>
+              <strong id="profileBirthDate">-</strong>
+            </div>
+            <div class="info-card full">
+              <span>Email</span>
+              <strong id="profileEmail">-</strong>
+            </div>
+          </div>
+
+          <button id="logoutBtn" class="secondary-btn" type="button">Deconnexion</button>
+        </div>
       </section>
     </main>
 
     <nav class="bottom-nav" aria-label="Navigation principale">
-      <button class="active" type="button">Recherche</button>
-      <button type="button">Billets</button>
-      <button type="button">Favoris</button>
-      <button type="button">Infos trafic</button>
-      <button type="button">Profil</button>
+      <button class="nav-btn active" type="button" data-view="search">Recherche</button>
+      <button class="nav-btn" type="button" data-view="favorites">Favoris</button>
+      <button class="nav-btn" type="button" data-view="trips">Mes trajets</button>
+      <button class="nav-btn" type="button" data-view="profile">Profil</button>
     </nav>
   </div>
-
-  <section id="accountPanel" class="account-panel hidden" aria-hidden="true">
-    <div class="account-card">
-      <button id="closeAccount" class="close-btn" type="button" aria-label="Fermer">×</button>
-
-      <div id="accountAuthState">
-        <p class="eyebrow">Compte voyageur</p>
-        <h2 id="accountTitle">Connexion</h2>
-        <p id="accountSubtitle" class="account-subtitle">Connectez-vous pour retrouver vos preferences localement sur cet appareil.</p>
-
-        <div id="registerFields" class="register-grid hidden">
-          <label class="field">
-            <span>Matricule</span>
-            <input id="matricule" placeholder="Ex: AB1234" />
-          </label>
-          <label class="field">
-            <span>Prenom</span>
-            <input id="firstName" placeholder="Prenom" />
-          </label>
-          <label class="field">
-            <span>Nom</span>
-            <input id="lastName" placeholder="Nom" />
-          </label>
-        </div>
-
-        <label class="field">
-          <span>Email</span>
-          <input id="email" type="email" placeholder="email@domain.tn" />
-        </label>
-        <label class="field">
-          <span>Mot de passe</span>
-          <input id="password" type="password" placeholder="Mot de passe" />
-        </label>
-
-        <button id="accountSubmit" class="primary-btn" type="button">Se connecter</button>
-        <button id="toggleRegister" class="secondary-btn" type="button">Creer un compte</button>
-        <p id="accountMessage" class="feedback"></p>
-      </div>
-
-      <div id="accountProfileState" class="hidden">
-        <p class="eyebrow">Session active</p>
-        <h2 id="profileName">Voyageur</h2>
-        <p id="profileEmail" class="account-subtitle"></p>
-        <div class="profile-summary">
-          <div>
-            <span>Matricule</span>
-            <strong id="profileMatricule">-</strong>
-          </div>
-          <div>
-            <span>Favoris</span>
-            <strong id="profileFavoritesCount">0</strong>
-          </div>
-        </div>
-        <button id="logoutBtn" class="secondary-btn" type="button">Se deconnecter</button>
-      </div>
-    </div>
-  </section>
 
   <script src="./app.js"></script>
 </body>

@@ -15,11 +15,14 @@
       <div class="hero-overlay"></div>
 
       <div class="auth-hero-copy">
-        <img src="./assets/logo-sncft.svg" alt="SNCFT Navigator" />
+        <div class="brand-mark">
+          <img src="./assets/logo-sncft.png" alt="SNCFT" class="brand-logo" />
+        </div>
+
         <div>
           <p class="eyebrow">Back-office ferroviaire</p>
-          <h1>Pilotez les horaires, tarifs et publications depuis un seul tableau de bord.</h1>
-          <p>Verifiez l etat de l API, previsualisez vos CSV, publiez les imports actifs et suivez les versions en production.</p>
+          <h1>Pilotez les imports et les versions actives depuis un dashboard clair.</h1>
+          <p>Suivez la sante de l API, les imports publies et les references actives.</p>
         </div>
       </div>
     </div>
@@ -27,7 +30,7 @@
     <div class="auth-card">
       <p class="eyebrow">Acces admin</p>
       <h2 id="authTitle">Connexion admin</h2>
-      <p id="authText" class="auth-text">Connectez-vous pour gerer les imports et les versions publiees.</p>
+      <p id="authText" class="auth-text">Connectez-vous pour acceder au dashboard SNCFT Navigator.</p>
 
       <div class="auth-tabs">
         <button id="loginTab" class="tab-btn active" type="button">Connexion</button>
@@ -64,7 +67,7 @@
       <div class="demo-card">
         <span>Compte demo</span>
         <strong>admin@domain.tn</strong>
-        <small>Mot de passe : admin123</small>
+        <small>Mot de passe: admin123</small>
       </div>
     </div>
   </section>
@@ -72,174 +75,182 @@
   <section id="dashboardPage" class="dashboard hidden">
     <aside class="sidebar">
       <div class="sidebar-brand">
-        <img src="./assets/logo-sncft.svg" alt="SNCFT Navigator" />
-        <p>SNCFT Navigator Admin</p>
+        <div class="brand-mark compact">
+          <img src="./assets/logo-sncft.png" alt="SNCFT" class="brand-logo" />
+        </div>
+        <p>Dashboard admin</p>
       </div>
 
       <nav class="sidebar-nav">
-        <button class="active" type="button">Vue d ensemble</button>
-        <button type="button">Imports CSV</button>
-        <button type="button">Versions actives</button>
-        <button type="button">Historique</button>
+        <button class="sidebar-link active" type="button" data-view="home">Accueil</button>
+        <button class="sidebar-link" type="button" data-view="imports">Import CSV</button>
+        <button class="sidebar-link" type="button" data-view="history">Historique</button>
+        <button class="sidebar-link" type="button" data-view="versions">Versions actives</button>
       </nav>
 
-      <section class="sidebar-card">
-        <span>API de reference</span>
-        <strong id="sidebarApiStatus">Indisponible</strong>
-        <small id="sidebarApiBase">http://127.0.0.1:3000</small>
-      </section>
-
-      <section class="sidebar-card">
-        <label class="field compact">
-          <span>API base</span>
-          <input id="apiBaseInput" placeholder="http://127.0.0.1:3000" />
-        </label>
-        <button id="saveApiBase" class="secondary-btn small-btn" type="button">Enregistrer</button>
-      </section>
+      <div class="sidebar-footer">
+        <div class="session-card">
+          <span id="sessionGreeting">Salut Ahmed</span>
+          <small id="sessionEmail">admin@domain.tn</small>
+        </div>
+        <button id="logoutBtn" class="ghost-sidebar-btn" type="button">Deconnexion</button>
+      </div>
     </aside>
 
     <main class="dashboard-main">
-      <header class="dashboard-hero">
-        <div class="hero-slide active"></div>
-        <div class="hero-slide"></div>
-        <div class="hero-slide"></div>
-        <div class="hero-overlay"></div>
+      <section id="homeView" class="dashboard-view">
+        <header class="dashboard-hero">
+          <div class="hero-slide active"></div>
+          <div class="hero-slide"></div>
+          <div class="hero-slide"></div>
+          <div class="hero-overlay"></div>
 
-        <div class="dashboard-hero-content">
-          <div>
-            <p class="eyebrow">Operations locales</p>
-            <h1>Publiez les donnees voyageurs en gardant une lecture claire des versions et du pipeline d import.</h1>
-            <p>Votre interface reste connectee aux endpoints existants avec autorisation Bearer dev-token pour les operations d administration.</p>
-          </div>
-
-          <div class="hero-actions">
-            <div class="session-chip">
-              <span id="sessionName">Admin</span>
-              <small id="sessionEmail">admin@domain.tn</small>
+          <div class="dashboard-hero-content">
+            <div>
+              <p id="heroGreeting" class="eyebrow">Salut Ahmed</p>
+              <h1>Dashboard admin</h1>
+              <p>Supervisez les imports, les versions publiees et la disponibilite de l API.</p>
             </div>
-            <button id="logoutBtn" class="light-btn" type="button">Deconnexion</button>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <section class="kpi-grid">
-        <article class="kpi-card">
-          <span>API status</span>
-          <strong id="apiStatus">Verification...</strong>
-          <small id="apiStatusDetail">Sante du service</small>
-        </article>
-        <article class="kpi-card">
-          <span>Horaires actifs</span>
-          <strong id="activeSchedules">-</strong>
-          <small>Version schedule publiee</small>
-        </article>
-        <article class="kpi-card">
-          <span>Tarifs actifs</span>
-          <strong id="activeFares">-</strong>
-          <small>Version fare publiee</small>
-        </article>
-        <article class="kpi-card">
-          <span>Imports</span>
-          <strong id="importsCount">0</strong>
-          <small>Historique charge</small>
-        </article>
+        <section class="kpi-grid">
+          <article class="kpi-card">
+            <span>API</span>
+            <strong id="apiStatus">Verification...</strong>
+            <small id="apiStatusDetail">Etat du service</small>
+          </article>
+          <article class="kpi-card">
+            <span>Horaires actifs</span>
+            <strong id="activeSchedules">-</strong>
+            <small>Version publiee</small>
+          </article>
+          <article class="kpi-card">
+            <span>Tarifs actifs</span>
+            <strong id="activeFares">-</strong>
+            <small>Version publiee</small>
+          </article>
+          <article class="kpi-card">
+            <span>Imports</span>
+            <strong id="importsCount">0</strong>
+            <small>Historique charge</small>
+          </article>
+        </section>
       </section>
 
-      <p id="dashboardMessage" class="dashboard-message"></p>
-
-      <section class="content-grid">
-        <article class="panel">
-          <div class="panel-head">
-            <div>
-              <p class="eyebrow">Horaires</p>
-              <h2>Import schedules CSV</h2>
-            </div>
-            <span class="status-chip">Preview puis publish</span>
-          </div>
-
-          <label class="field">
-            <span>Fichier CSV</span>
-            <input id="scheduleFile" type="file" accept=".csv,text/csv" multiple />
-          </label>
-          <label class="field">
-            <span>Ou collez le contenu</span>
-            <textarea id="scheduleCsv" placeholder="Collez ici votre CSV horaires..."></textarea>
-          </label>
-
-          <div class="panel-actions">
-            <button id="previewSchedules" class="secondary-btn" type="button">Preview</button>
-            <button id="publishSchedules" class="primary-btn" type="button">Publish</button>
-          </div>
-
-          <pre id="scheduleOut" class="output-box">Aucune previsualisation pour le moment.</pre>
-        </article>
-
-        <article class="panel">
-          <div class="panel-head">
-            <div>
-              <p class="eyebrow">Tarifs</p>
-              <h2>Import fares CSV</h2>
-            </div>
-            <span class="status-chip green">Tarification</span>
-          </div>
-
-          <label class="field">
-            <span>Fichier CSV</span>
-            <input id="fareFile" type="file" accept=".csv,text/csv" multiple />
-          </label>
-          <label class="field">
-            <span>Ou collez le contenu</span>
-            <textarea id="fareCsv" placeholder="Collez ici votre CSV tarifs..."></textarea>
-          </label>
-
-          <div class="panel-actions">
-            <button id="previewFares" class="secondary-btn" type="button">Preview</button>
-            <button id="publishFares" class="primary-btn" type="button">Publish</button>
-          </div>
-
-          <pre id="fareOut" class="output-box">Aucune previsualisation pour le moment.</pre>
-        </article>
-      </section>
-
-      <section class="panel">
-        <div class="panel-head">
+      <section id="importsView" class="dashboard-view hidden">
+        <div class="view-header">
           <div>
-            <p class="eyebrow">Versions publiees</p>
-            <h2>Imports actifs et historique</h2>
+            <p class="eyebrow">Import CSV</p>
+            <h2>Previsualisez et publiez vos fichiers</h2>
           </div>
-          <button id="refreshBtn" class="secondary-btn small-btn" type="button">Rafraichir</button>
+          <p id="dashboardMessage" class="dashboard-message"></p>
         </div>
 
-        <div class="active-summary">
+        <section class="panel-grid">
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Horaires</p>
+                <h3>Schedules CSV</h3>
+              </div>
+            </div>
+
+            <label class="field">
+              <span>Fichier CSV</span>
+              <input id="scheduleFile" type="file" accept=".csv,text/csv" multiple />
+            </label>
+            <label class="field">
+              <span>Ou collez le contenu</span>
+              <textarea id="scheduleCsv" placeholder="Collez ici votre CSV horaires..."></textarea>
+            </label>
+
+            <div class="panel-actions">
+              <button id="previewSchedules" class="secondary-btn" type="button">Previsualiser</button>
+              <button id="publishSchedules" class="primary-btn" type="button">Importer et publier</button>
+            </div>
+
+            <p id="scheduleStatus" class="status-text"></p>
+            <div id="schedulePreview" class="preview-block"></div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">Tarifs</p>
+                <h3>Fares CSV</h3>
+              </div>
+            </div>
+
+            <label class="field">
+              <span>Fichier CSV</span>
+              <input id="fareFile" type="file" accept=".csv,text/csv" multiple />
+            </label>
+            <label class="field">
+              <span>Ou collez le contenu</span>
+              <textarea id="fareCsv" placeholder="Collez ici votre CSV tarifs..."></textarea>
+            </label>
+
+            <div class="panel-actions">
+              <button id="previewFares" class="secondary-btn" type="button">Previsualiser</button>
+              <button id="publishFares" class="primary-btn" type="button">Importer et publier</button>
+            </div>
+
+            <p id="fareStatus" class="status-text"></p>
+            <div id="farePreview" class="preview-block"></div>
+          </article>
+        </section>
+      </section>
+
+      <section id="historyView" class="dashboard-view hidden">
+        <div class="view-header">
           <div>
+            <p class="eyebrow">Historique</p>
+            <h2>Imports publies et brouillons</h2>
+          </div>
+          <button id="refreshHistoryBtn" class="secondary-btn small-btn" type="button">Rafraichir</button>
+        </div>
+
+        <section class="panel">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>ID</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th>Lignes</th>
+                  <th>Actif</th>
+                </tr>
+              </thead>
+              <tbody id="historyTable">
+                <tr><td colspan="6">Aucun import charge.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section id="versionsView" class="dashboard-view hidden">
+        <div class="view-header">
+          <div>
+            <p class="eyebrow">Versions actives</p>
+            <h2>References publiees</h2>
+          </div>
+          <button id="refreshVersionsBtn" class="secondary-btn small-btn" type="button">Rafraichir</button>
+        </div>
+
+        <section class="active-grid">
+          <article class="active-card">
             <span>Schedule active</span>
-            <strong id="activeScheduleInline">-</strong>
-          </div>
-          <div>
+            <strong id="activeScheduleFull">-</strong>
+          </article>
+          <article class="active-card">
             <span>Fare active</span>
-            <strong id="activeFareInline">-</strong>
-          </div>
-        </div>
-
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Type</th>
-                <th>ID</th>
-                <th>Status</th>
-                <th>Date</th>
-                <th>Lignes</th>
-                <th>Actif</th>
-              </tr>
-            </thead>
-            <tbody id="importsTable">
-              <tr>
-                <td colspan="6">Aucun import charge.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+            <strong id="activeFareFull">-</strong>
+          </article>
+        </section>
       </section>
     </main>
   </section>

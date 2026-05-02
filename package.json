@@ -20,6 +20,7 @@
     "local:api": "ADMIN_AUTH_REQUIRED=false STORAGE_DRIVER=memory SNCFT_DEV_ADMIN_ROLE=superadmin npm run dev -w @sncft/api",
     "local:admin": "npm run dev -w @sncft/admin --if-present",
     "local:passenger": "npm run dev -w @sncft/passenger --if-present",
+    "local:passenger-mobile": "npm run start -w @sncft/passenger-mobile --if-present",
     "local:import": "ADMIN_TOKEN=dev-token CSV_DIR=${CSV_DIR:-$HOME/Desktop/csv} API_BASE_URL=http://127.0.0.1:3000 npm run import:all -w @sncft/api",
     "local:test": "npm run test -w @sncft/api && npm run test -w @sncft/import-engine && npm run check",
     "supabase:api": "ADMIN_AUTH_REQUIRED=true STORAGE_DRIVER=supabase SNCFT_DEV_ADMIN_ROLE=superadmin npm run dev -w @sncft/api",

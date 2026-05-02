@@ -5,7 +5,16 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const port = Number(process.env.ADMIN_PORT || 4170);
-const contentType = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css' };
+const contentType = {
+  '.html': 'text/html',
+  '.js': 'application/javascript',
+  '.css': 'text/css',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+};
 
 createServer(async (req, res) => {
   const reqPath = req.url === '/' ? '/index.html' : req.url;
