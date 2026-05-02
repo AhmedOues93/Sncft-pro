@@ -16,7 +16,6 @@
           <small>Trajets en temps reel</small>
         </span>
       </button>
-      <button id="openAccount" class="account-chip" type="button">Profil</button>
     </header>
 
     <main class="main">
@@ -200,9 +199,16 @@
             <span>Mot de passe</span>
             <input id="password" type="password" placeholder="Mot de passe" />
           </label>
+          <label id="confirmPasswordField" class="field hidden">
+            <span>Confirmer le mot de passe</span>
+            <input id="confirmPassword" type="password" placeholder="Confirmer le mot de passe" />
+          </label>
 
           <button id="accountSubmit" class="primary-btn" type="button">Se connecter</button>
-          <button id="toggleRegister" class="secondary-btn" type="button">Creer un compte</button>
+          <div class="account-actions">
+            <button id="toggleRegister" class="secondary-btn" type="button">Creer un compte</button>
+            <button id="forgotPasswordBtn" class="text-btn" type="button">Mot de passe oublie ?</button>
+          </div>
           <p id="accountMessage" class="feedback"></p>
         </div>
 
@@ -244,7 +250,7 @@
       <button class="nav-btn active" type="button" data-view="search">Recherche</button>
       <button class="nav-btn" type="button" data-view="favorites">Favoris</button>
       <button class="nav-btn" type="button" data-view="trips">Mes trajets</button>
-      <button class="nav-btn" type="button" data-view="profile">Profil</button>
+      <button id="profileNavBtn" class="nav-btn" type="button" data-view="profile">Connexion</button>
     </nav>
   </div>
 

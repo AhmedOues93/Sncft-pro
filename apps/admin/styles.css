@@ -249,6 +249,10 @@ svg {
   margin-bottom: 14px;
 }
 
+.file-field {
+  margin-bottom: 16px;
+}
+
 .field span {
   color: #334155;
   font-size: 13px;
@@ -264,6 +268,45 @@ textarea {
   color: var(--text);
   outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sr-only-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.file-picker {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.file-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 220px;
+  text-align: center;
+}
+
+.file-name {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-radius: 18px;
+  background: white;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-weight: 700;
 }
 
 input {
@@ -325,6 +368,15 @@ textarea:focus {
 
 #authSubmit {
   width: 100%;
+}
+
+.text-btn {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--secondary);
+  font-weight: 800;
 }
 
 #authMessage {
@@ -719,6 +771,24 @@ th {
   background: #F1F5F9;
 }
 
+.table-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(239, 68, 68, 0.14);
+  background: rgba(239, 68, 68, 0.08);
+  color: #B91C1C;
+  font-weight: 900;
+}
+
+.table-action:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
 .active-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -783,6 +853,14 @@ th {
   .panel-actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .file-picker {
+    grid-template-columns: 1fr;
+  }
+
+  .file-trigger {
+    min-width: 0;
   }
 
   .preview-summary {

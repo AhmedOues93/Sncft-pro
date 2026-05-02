@@ -54,6 +54,22 @@ class MemoryStore implements ImportStore {
     return draft;
   }
 
+  async deleteDraft(id: string): Promise<void> {
+    if (this.published.scheduleImportId === id || this.published.fareImportId === id) {
+      throw new Error('Active imports cannot be deleted');
+    }
+
+    if (this.published.previousScheduleImportId === id) {
+      this.published.previousScheduleImportId = undefined;
+    }
+
+    if (this.published.previousFareImportId === id) {
+      this.published.previousFareImportId = undefined;
+    }
+
+    this.drafts.delete(id);
+  }
+
   async getPublishedStops(): Promise<ParsedStop[]> {
     if (!this.published.scheduleImportId) return [];
     const schedule = this.drafts.get(this.published.scheduleImportId);

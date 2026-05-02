@@ -4,6 +4,7 @@ const FAVORITES_KEY = 'sncft_passenger_favorites_by_account';
 const TRIPS_KEY = 'sncft_passenger_trips_by_account';
 const API_BASE_KEY = 'sncft_api_base';
 const DEFAULT_API_BASE = 'http://127.0.0.1:3000';
+const STRONG_PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
 const stationCoords = [
   { name: 'Tunis Ville', lat: 36.8008, lng: 10.18 },
@@ -89,6 +90,14 @@ function accounts() {
 
 function saveAccounts(list) {
   writeJson(ACCOUNT_KEY, list);
+}
+
+function validateStrongPassword(password) {
+  if (password.length < 8) return 'Le mot de passe doit contenir au moins 8 caracteres.';
+  if (!/[A-Z]/.test(password)) return 'Le mot de passe doit contenir au moins une majuscule.';
+  if (!/\d/.test(password)) return 'Le mot de passe doit contenir au moins un chiffre.';
+  if (!/[^A-Za-z0-9]/.test(password)) return 'Le mot de passe doit contenir au moins un caractere special.';
+  return '';
 }
 
 function normalizePassengerAccount(account) {
@@ -747,15 +756,22 @@ function useLocation() {
 }
 
 function setAccountMode(mode) {
-  state.accountMode = mode === 'register' ? 'register' : 'login';
+  state.accountMode = ['register', 'reset'].includes(mode) ? mode : 'login';
   const registerMode = state.accountMode === 'register';
+  const resetMode = state.accountMode === 'reset';
   $('registerFields').classList.toggle('hidden', !registerMode);
+  $('confirmPasswordField').classList.toggle('hidden', !resetMode);
   $('authTitle').textContent = registerMode ? 'Creer un compte' : 'Connexion';
+  if (resetMode) $('authTitle').textContent = 'Reinitialiser le mot de passe';
   $('authSubtitle').textContent = registerMode
     ? 'Creez un compte voyageur avec votre nom, votre date de naissance, votre email et votre mot de passe.'
-    : 'Connectez-vous pour retrouver vos favoris et vos trajets sur cet appareil.';
-  $('accountSubmit').textContent = registerMode ? 'Creer mon compte' : 'Se connecter';
-  $('toggleRegister').textContent = registerMode ? 'J ai deja un compte' : 'Creer un compte';
+    : resetMode
+      ? 'Saisissez votre email et choisissez un nouveau mot de passe fort. Cette reinitialisation est locale pour la demo.'
+      : 'Connectez-vous pour retrouver vos favoris et vos trajets sur cet appareil.';
+  $('accountSubmit').textContent = registerMode ? 'Creer mon compte' : resetMode ? 'Reinitialiser le mot de passe' : 'Se connecter';
+  $('toggleRegister').textContent = registerMode ? 'J ai deja un compte' : resetMode ? 'Retour a la connexion' : 'Creer un compte';
+  $('forgotPasswordBtn').classList.toggle('hidden', registerMode || resetMode);
+  $('password').placeholder = resetMode ? 'Nouveau mot de passe' : 'Mot de passe';
   $('accountMessage').textContent = '';
 }
 
@@ -764,8 +780,8 @@ function setAccountMessage(message, tone = 'default') {
   $('accountMessage').style.color = tone === 'error' ? '#EF4444' : tone === 'success' ? '#16A34A' : '#6B7280';
 }
 
-function updateHeaderAccount() {
-  $('openAccount').textContent = state.session?.firstName || 'Profil';
+function updateProfileNav() {
+  $('profileNavBtn').textContent = state.session?.firstName ? 'Profil' : 'Connexion';
 }
 
 function renderProfileView() {
@@ -774,7 +790,7 @@ function renderProfileView() {
   $('profileAccount').classList.toggle('hidden', !loggedIn);
 
   if (!loggedIn) {
-    updateHeaderAccount();
+    updateProfileNav();
     return;
   }
 
@@ -784,7 +800,7 @@ function renderProfileView() {
   $('profileBirthDate').textContent = state.session.birthDate || '-';
   $('profileEmail').textContent = state.session.email;
   document.querySelector('.profile-avatar').textContent = state.session.firstName.charAt(0).toUpperCase();
-  updateHeaderAccount();
+  updateProfileNav();
 }
 
 function renderLoginRequired(containerId, title, description) {
@@ -890,7 +906,7 @@ function restoreSession() {
 }
 
 function clearAuthInputs() {
-  ['firstName', 'lastName', 'birthDate', 'email', 'password'].forEach((id) => {
+  ['firstName', 'lastName', 'birthDate', 'email', 'password', 'confirmPassword'].forEach((id) => {
     const input = $(id);
     if (input) input.value = '';
   });
@@ -915,6 +931,12 @@ function submitAccount() {
       return;
     }
 
+    const passwordError = validateStrongPassword(password);
+    if (passwordError) {
+      setAccountMessage(passwordError, 'error');
+      return;
+    }
+
     const list = accounts();
     if (list.some((account) => String(account?.email || '').toLowerCase() === email)) {
       setAccountMessage('Un compte avec cet email existe deja.', 'error');
@@ -935,6 +957,33 @@ function submitAccount() {
     $('email').value = email;
     $('password').value = '';
     setAccountMessage('Compte cree. Vous pouvez maintenant vous connecter.', 'success');
+    return;
+  }
+
+  if (state.accountMode === 'reset') {
+    const confirmPassword = $('confirmPassword').value.trim();
+    const passwordError = validateStrongPassword(password);
+    if (passwordError) {
+      setAccountMessage(passwordError, 'error');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setAccountMessage('Les mots de passe ne correspondent pas.', 'error');
+      return;
+    }
+    const list = accounts().map(normalizePassengerAccount);
+    const accountIndex = list.findIndex((item) => item.email === email);
+    if (accountIndex < 0) {
+      setAccountMessage('Aucun compte local ne correspond a cet email.', 'error');
+      return;
+    }
+    list[accountIndex].password = password;
+    saveAccounts(list);
+    setAccountMode('login');
+    $('email').value = email;
+    $('password').value = '';
+    $('confirmPassword').value = '';
+    setAccountMessage('Mot de passe mis a jour. Vous pouvez vous connecter.', 'success');
     return;
   }
 
@@ -1042,7 +1091,6 @@ function bind() {
   bindStationField('destination', 'destinationInput', 'destinationId', 'destinationSuggestions');
 
   $('brandButton').addEventListener('click', openSearchView);
-  $('openAccount').addEventListener('click', () => setView('profile'));
 
   document.querySelectorAll('.nav-btn').forEach((button) => {
     button.addEventListener('click', () => {
@@ -1145,7 +1193,11 @@ function bind() {
   });
 
   $('toggleRegister').addEventListener('click', () => {
-    setAccountMode(state.accountMode === 'register' ? 'login' : 'register');
+    setAccountMode(state.accountMode === 'login' ? 'register' : 'login');
+  });
+  $('forgotPasswordBtn').addEventListener('click', () => {
+    clearAuthInputs();
+    setAccountMode('reset');
   });
   $('accountSubmit').addEventListener('click', submitAccount);
   $('logoutBtn').addEventListener('click', logout);
@@ -1167,5 +1219,5 @@ window.addEventListener('DOMContentLoaded', () => {
   bind();
   setAccountMode('login');
   renderAllAccountViews();
-  updateHeaderAccount();
+  updateProfileNav();
 });

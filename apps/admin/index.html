@@ -60,8 +60,13 @@
         <span>Mot de passe</span>
         <input id="password" type="password" placeholder="admin123" />
       </label>
+      <label id="confirmPasswordField" class="field hidden">
+        <span>Confirmer le mot de passe</span>
+        <input id="confirmPassword" type="password" placeholder="Confirmer le mot de passe" />
+      </label>
 
       <button id="authSubmit" class="primary-btn" type="button">Se connecter</button>
+      <button id="forgotPasswordBtn" class="text-btn" type="button">Mot de passe oublie ?</button>
       <p id="authMessage" class="feedback"></p>
 
       <div class="demo-card">
@@ -116,24 +121,24 @@
 
         <section class="kpi-grid">
           <article class="kpi-card">
-            <span>API</span>
-            <strong id="apiStatus">Verification...</strong>
-            <small id="apiStatusDetail">Etat du service</small>
+            <span>Trains disponibles</span>
+            <strong id="availableTrains">-</strong>
+            <small id="serviceStatus">Service synchronise</small>
           </article>
           <article class="kpi-card">
-            <span>Horaires actifs</span>
-            <strong id="activeSchedules">-</strong>
-            <small>Version publiee</small>
-          </article>
-          <article class="kpi-card">
-            <span>Tarifs actifs</span>
-            <strong id="activeFares">-</strong>
-            <small>Version publiee</small>
-          </article>
-          <article class="kpi-card">
-            <span>Imports</span>
+            <span>CSV importes</span>
             <strong id="importsCount">0</strong>
-            <small>Historique charge</small>
+            <small>Total historique</small>
+          </article>
+          <article class="kpi-card">
+            <span>Uploads ce mois</span>
+            <strong id="monthlyUploads">0</strong>
+            <small>Imports recents</small>
+          </article>
+          <article class="kpi-card">
+            <span>Derniere publication</span>
+            <strong id="lastPublished">-</strong>
+            <small>Publication la plus recente</small>
           </article>
         </section>
       </section>
@@ -156,9 +161,13 @@
               </div>
             </div>
 
-            <label class="field">
+            <label class="field file-field">
               <span>Fichier CSV</span>
-              <input id="scheduleFile" type="file" accept=".csv,text/csv" multiple />
+              <input id="scheduleFile" class="sr-only-file" type="file" accept=".csv,text/csv" multiple />
+              <div class="file-picker">
+                <label class="secondary-btn file-trigger" for="scheduleFile">Selectionner un fichier</label>
+                <div id="scheduleFileName" class="file-name">Aucun fichier selectionne</div>
+              </div>
             </label>
             <label class="field">
               <span>Ou collez le contenu</span>
@@ -182,9 +191,13 @@
               </div>
             </div>
 
-            <label class="field">
+            <label class="field file-field">
               <span>Fichier CSV</span>
-              <input id="fareFile" type="file" accept=".csv,text/csv" multiple />
+              <input id="fareFile" class="sr-only-file" type="file" accept=".csv,text/csv" multiple />
+              <div class="file-picker">
+                <label class="secondary-btn file-trigger" for="fareFile">Selectionner un fichier</label>
+                <div id="fareFileName" class="file-name">Aucun fichier selectionne</div>
+              </div>
             </label>
             <label class="field">
               <span>Ou collez le contenu</span>
@@ -222,10 +235,11 @@
                   <th>Date</th>
                   <th>Lignes</th>
                   <th>Actif</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody id="historyTable">
-                <tr><td colspan="6">Aucun import charge.</td></tr>
+                <tr><td colspan="7">Aucun import charge.</td></tr>
               </tbody>
             </table>
           </div>

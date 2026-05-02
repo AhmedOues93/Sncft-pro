@@ -25,6 +25,7 @@ export interface ImportStore {
   getDraft(id: string): Promise<DraftImportRecord | undefined>;
   publishDraft(id: string): Promise<DraftImportRecord>;
   rollback(id: string): Promise<DraftImportRecord>;
+  deleteDraft(id: string): Promise<void>;
   getPublishedStops(): Promise<ParsedStop[]>;
   getPublishedFares(): Promise<ParsedFare[]>;
   listDrafts(kind?: ImportKind): Promise<DraftImportRecord[]>;

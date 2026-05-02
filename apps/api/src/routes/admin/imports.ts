@@ -58,6 +58,16 @@ adminImportsRouter.post('/admin/imports/:id/rollback', rateLimit('admin-write', 
   res.json({ id: rollback.id, kind: rollback.kind, status: rollback.status });
 }));
 
+adminImportsRouter.delete('/admin/imports/:id', rateLimit('admin-write', 40), requireAdminRole('publisher'), asyncHandler(async (req, res) => {
+  const store = getImportStore();
+  const active = await store.getActiveVersions();
+  if (active.scheduleImportId === req.params.id || active.fareImportId === req.params.id) {
+    throw new ApiError(409, 'Active imports cannot be deleted');
+  }
+  await store.deleteDraft(req.params.id);
+  res.status(204).send();
+}));
+
 adminImportsRouter.get('/admin/imports', requireAdminRole('viewer'), asyncHandler(async (req, res) => {
   const kind = req.query.kind === 'schedule' || req.query.kind === 'fare' ? req.query.kind : undefined;
   const store = getImportStore();

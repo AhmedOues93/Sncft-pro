@@ -4,6 +4,7 @@ const TOKEN_KEY = 'sncft_admin_token';
 const SESSION_KEY = 'sncft_admin_session';
 const ACCOUNT_KEY = 'sncft_admin_accounts';
 const MATRICULE_REGEX = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z0-9]+$/;
+const STRONG_PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
 const state = {
   authMode: 'login',
@@ -47,6 +48,14 @@ function saveAccounts(list) {
   writeJson(ACCOUNT_KEY, list);
 }
 
+function validateStrongPassword(password) {
+  if (password.length < 8) return 'Le mot de passe doit contenir au moins 8 caracteres.';
+  if (!/[A-Z]/.test(password)) return 'Le mot de passe doit contenir au moins une majuscule.';
+  if (!/\d/.test(password)) return 'Le mot de passe doit contenir au moins un chiffre.';
+  if (!/[^A-Za-z0-9]/.test(password)) return 'Le mot de passe doit contenir au moins un caractere special.';
+  return '';
+}
+
 function seedAccounts() {
   const demo = {
     matricule: 'ADM123',
@@ -81,16 +90,22 @@ function initHeroRotations() {
 }
 
 function setAuthMode(mode) {
-  state.authMode = mode === 'register' ? 'register' : 'login';
+  state.authMode = ['register', 'reset'].includes(mode) ? mode : 'login';
   const registerMode = state.authMode === 'register';
+  const resetMode = state.authMode === 'reset';
   $('registerFields').classList.toggle('hidden', !registerMode);
-  $('authTitle').textContent = registerMode ? 'Creer un compte admin' : 'Connexion admin';
+  $('confirmPasswordField').classList.toggle('hidden', !resetMode);
+  $('authTitle').textContent = registerMode ? 'Creer un compte admin' : resetMode ? 'Reinitialiser le mot de passe' : 'Connexion admin';
   $('authText').textContent = registerMode
     ? 'Creez un compte local avec matricule, nom, prenom, email et mot de passe.'
-    : 'Connectez-vous pour acceder au dashboard SNCFT Navigator.';
-  $('authSubmit').textContent = registerMode ? 'Creer mon compte' : 'Se connecter';
+    : resetMode
+      ? 'Saisissez votre email et choisissez un nouveau mot de passe fort. Cette reinitialisation est locale.'
+      : 'Connectez-vous pour acceder au dashboard SNCFT Navigator.';
+  $('authSubmit').textContent = registerMode ? 'Creer mon compte' : resetMode ? 'Reinitialiser le mot de passe' : 'Se connecter';
   $('loginTab').classList.toggle('active', !registerMode);
   $('registerTab').classList.toggle('active', registerMode);
+  $('forgotPasswordBtn').classList.toggle('hidden', registerMode || resetMode);
+  $('password').placeholder = resetMode ? 'Nouveau mot de passe' : 'admin123';
   setAuthMessage('');
 }
 
@@ -133,7 +148,7 @@ function restoreSession() {
 }
 
 function clearAuthInputs() {
-  ['matricule', 'firstName', 'lastName', 'email', 'password'].forEach((id) => {
+  ['matricule', 'firstName', 'lastName', 'email', 'password', 'confirmPassword'].forEach((id) => {
     const field = $(id);
     if (field) field.value = '';
   });
@@ -153,6 +168,12 @@ function register() {
 
   if (!MATRICULE_REGEX.test(matricule)) {
     setAuthMessage('Le matricule doit contenir au moins une lettre et un chiffre.', 'error');
+    return;
+  }
+
+  const passwordError = validateStrongPassword(password);
+  if (passwordError) {
+    setAuthMessage(passwordError, 'error');
     return;
   }
 
@@ -195,6 +216,43 @@ function login() {
 
   persistSession(account);
   showDashboard();
+}
+
+function resetPassword() {
+  const email = $('email').value.trim().toLowerCase();
+  const password = $('password').value.trim();
+  const confirmPassword = $('confirmPassword').value.trim();
+
+  if (!email || !password || !confirmPassword) {
+    setAuthMessage('Entrez votre email, votre nouveau mot de passe et sa confirmation.', 'error');
+    return;
+  }
+
+  const passwordError = validateStrongPassword(password);
+  if (passwordError) {
+    setAuthMessage(passwordError, 'error');
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    setAuthMessage('Les mots de passe ne correspondent pas.', 'error');
+    return;
+  }
+
+  const list = accounts();
+  const index = list.findIndex((account) => account.email === email);
+  if (index < 0) {
+    setAuthMessage('Aucun compte local ne correspond a cet email.', 'error');
+    return;
+  }
+
+  list[index].password = password;
+  saveAccounts(list);
+  setAuthMode('login');
+  $('email').value = email;
+  $('password').value = '';
+  $('confirmPassword').value = '';
+  setAuthMessage('Mot de passe mis a jour. Vous pouvez vous connecter.', 'success');
 }
 
 function logout() {
@@ -271,11 +329,18 @@ function escapeHtml(value) {
 }
 
 function updateKpis(healthOk) {
-  $('apiStatus').textContent = healthOk ? 'OK' : 'Erreur';
-  $('apiStatusDetail').textContent = healthOk ? 'Service joignable' : 'Service indisponible';
-  $('activeSchedules').textContent = shortId(state.activeVersions.scheduleImportId);
-  $('activeFares').textContent = shortId(state.activeVersions.fareImportId);
+  const schedule = state.imports.find((item) => item.id === state.activeVersions.scheduleImportId);
+  const published = state.imports.filter((item) => item.status === 'published');
+  const now = new Date();
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const monthlyUploads = state.imports.filter((item) => String(item.createdAt || '').slice(0, 7) === currentMonth).length;
+  const trainsCount = schedule?.summary?.trips_count;
+  const latestPublished = published[0]?.createdAt ? new Date(published[0].createdAt).toLocaleDateString('fr-FR') : '—';
+  $('availableTrains').textContent = Number.isFinite(trainsCount) && trainsCount > 0 ? String(trainsCount) : '—';
+  $('serviceStatus').textContent = healthOk ? 'Service synchronise' : 'Service a verifier';
   $('importsCount').textContent = String(state.imports.length);
+  $('monthlyUploads').textContent = String(monthlyUploads);
+  $('lastPublished').textContent = latestPublished;
   $('activeScheduleFull').textContent = state.activeVersions.scheduleImportId || '-';
   $('activeFareFull').textContent = state.activeVersions.fareImportId || '-';
 }
@@ -290,7 +355,7 @@ function summaryRows(item) {
 
 function renderHistoryTable() {
   if (!state.imports.length) {
-    $('historyTable').innerHTML = '<tr><td colspan="6">Aucun import charge.</td></tr>';
+    $('historyTable').innerHTML = '<tr><td colspan="7">Aucun import charge.</td></tr>';
     return;
   }
 
@@ -307,6 +372,7 @@ function renderHistoryTable() {
         <td>${item.createdAt ? new Date(item.createdAt).toLocaleString('fr-FR') : '—'}</td>
         <td>${summaryRows(item)}</td>
         <td><span class="row-badge ${isActive ? 'active' : 'idle'}">${isActive ? 'Oui' : 'Non'}</span></td>
+        <td><button class="table-action" type="button" data-action="delete-import" data-id="${item.id}" ${isActive ? 'disabled title="Impossible de supprimer une version active."' : ''}>Supprimer</button></td>
       </tr>
     `;
   }).join('');
@@ -456,6 +522,13 @@ async function readCsv(fileInput, textarea) {
   return textarea.value.trim();
 }
 
+function syncFileName(kind) {
+  const input = kind === 'schedule' ? $('scheduleFile') : $('fareFile');
+  const label = kind === 'schedule' ? $('scheduleFileName') : $('fareFileName');
+  const files = Array.from(input.files || []);
+  label.textContent = files.length ? files.map((file) => file.name).join(', ') : 'Aucun fichier selectionne';
+}
+
 async function previewImport(kind) {
   const fileInput = kind === 'schedule' ? $('scheduleFile') : $('fareFile');
   const textarea = kind === 'schedule' ? $('scheduleCsv') : $('fareCsv');
@@ -530,6 +603,18 @@ async function publishImport(kind) {
   }
 }
 
+async function deleteImport(id) {
+  if (!window.confirm('Supprimer cet import ? Cette action est irreversible.')) return;
+
+  try {
+    await api(`/admin/imports/${id}`, { method: 'DELETE' });
+    setDashboardMessage('Import supprime avec succes.', 'success');
+    await refreshData();
+  } catch (error) {
+    setDashboardMessage(formatError(error), 'error');
+  }
+}
+
 async function refreshData() {
   setDashboardMessage('');
 
@@ -571,7 +656,12 @@ function bind() {
   $('registerTab').addEventListener('click', () => setAuthMode('register'));
   $('authSubmit').addEventListener('click', () => {
     if (state.authMode === 'register') register();
+    else if (state.authMode === 'reset') resetPassword();
     else login();
+  });
+  $('forgotPasswordBtn').addEventListener('click', () => {
+    clearAuthInputs();
+    setAuthMode('reset');
   });
 
   document.querySelectorAll('.sidebar-link').forEach((button) => {
@@ -585,6 +675,12 @@ function bind() {
   $('publishFares').addEventListener('click', () => publishImport('fare'));
   $('refreshHistoryBtn').addEventListener('click', refreshData);
   $('refreshVersionsBtn').addEventListener('click', refreshData);
+  $('scheduleFile').addEventListener('change', () => syncFileName('schedule'));
+  $('fareFile').addEventListener('change', () => syncFileName('fare'));
+  $('historyTable').addEventListener('click', (event) => {
+    const button = event.target.closest('[data-action="delete-import"]');
+    if (button && !button.disabled) deleteImport(button.dataset.id);
+  });
 }
 
 window.addEventListener('DOMContentLoaded', () => {

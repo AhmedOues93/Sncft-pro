@@ -164,6 +164,27 @@ export class SupabaseStore implements ImportStore {
     return draft;
   }
 
+  async deleteDraft(id: string): Promise<void> {
+    const active = await this.getActiveVersions();
+    if (active.scheduleImportId === id || active.fareImportId === id) {
+      throw new Error('Active imports cannot be deleted');
+    }
+
+    await this.client
+      .from('active_versions')
+      .update({ previous_import_id: null })
+      .eq('previous_import_id', id);
+
+    const { error: issuesError } = await this.client.from('import_issues').delete().eq('import_id', id);
+    if (issuesError) throw new Error(`Failed to delete import issues: ${issuesError.message}`);
+
+    const { error: payloadError } = await this.client.from('import_payloads').delete().eq('import_id', id);
+    if (payloadError) throw new Error(`Failed to delete import payload: ${payloadError.message}`);
+
+    const { error: importError } = await this.client.from('imports').delete().eq('id', id);
+    if (importError) throw new Error(`Failed to delete import: ${importError.message}`);
+  }
+
   async getPublishedStops(): Promise<ParsedStop[]> {
     const versions = await this.getActiveVersions();
     if (!versions.scheduleImportId) return [];

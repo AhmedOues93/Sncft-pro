@@ -69,15 +69,13 @@ svg {
 
 .topbar {
   position: sticky;
-  top: 0;
+  top: 8px;
   z-index: 50;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
-  padding: 12px 0 16px;
-  background: linear-gradient(180deg, rgba(245, 247, 250, 0.96), rgba(245, 247, 250, 0.84));
-  backdrop-filter: blur(16px);
+  padding: 8px 0 10px;
+  background: transparent;
 }
 
 .brand {
@@ -85,12 +83,13 @@ svg {
   grid-template-columns: auto 1fr;
   align-items: center;
   gap: 12px;
-  min-height: 58px;
-  padding: 10px 14px 10px 12px;
+  min-height: 54px;
+  padding: 8px 12px 8px 10px;
   border: 0;
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 14px 24px rgba(11, 60, 93, 0.08);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 10px 24px rgba(11, 60, 93, 0.12);
+  backdrop-filter: blur(18px);
 }
 
 .brand-logo {
@@ -116,17 +115,6 @@ svg {
   color: var(--muted);
   font-size: 12px;
   font-weight: 700;
-}
-
-.account-chip {
-  min-height: 48px;
-  padding: 0 18px;
-  border: 0;
-  border-radius: 18px;
-  color: var(--primary);
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 14px 24px rgba(11, 60, 93, 0.08);
-  font-weight: 850;
 }
 
 .hero {
@@ -287,6 +275,7 @@ svg {
   display: grid;
   gap: 14px;
   margin-top: 20px;
+  padding-right: 72px;
 }
 
 .station-field {
@@ -325,16 +314,17 @@ svg {
   color: #94A3B8;
 }
 
-.field-inline .field input {
-  padding-left: 0;
-}
-
 .input-shell {
   position: relative;
+  min-width: 0;
 }
 
 .input-shell input {
   padding: 0 18px 0 50px;
+}
+
+.station-field input {
+  padding-right: 72px;
 }
 
 .input-icon {
@@ -375,6 +365,7 @@ svg {
   color: var(--primary);
   box-shadow: 0 16px 26px rgba(11, 60, 93, 0.12);
   font-size: 22px;
+  will-change: transform;
 }
 
 .meta-grid {
@@ -382,6 +373,11 @@ svg {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin-top: 16px;
+}
+
+.meta-grid > .field,
+.search-actions-row > .field {
+  min-width: 0;
 }
 
 .search-actions-row {
@@ -890,6 +886,21 @@ svg {
   margin-bottom: 8px;
 }
 
+.account-actions {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.text-btn {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--secondary);
+  font-weight: 800;
+}
+
 .profile-header {
   display: grid;
   grid-template-columns: 68px 1fr;
@@ -1031,5 +1042,35 @@ svg {
 
   .segment-stop {
     grid-template-columns: 64px 18px 1fr;
+  }
+}
+
+@media (max-width: 460px) {
+  .topbar {
+    top: 4px;
+  }
+
+  .brand {
+    max-width: min(86vw, 300px);
+  }
+
+  .brand-copy strong {
+    font-size: 14px;
+  }
+
+  .meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .station-stack {
+    padding-right: 68px;
+  }
+
+  .station-field input {
+    padding-right: 68px;
+  }
+
+  .swap-btn {
+    right: 12px;
   }
 }
